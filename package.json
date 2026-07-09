@@ -40,5 +40,8 @@
     "winston": "^3.19.0",
     "xss-clean": "^0.1.4",
     "zod": "^4.4.3"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }
