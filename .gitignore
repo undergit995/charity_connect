@@ -1,0 +1,15 @@
+node_modules/
+logs/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.claude
+*.local
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
