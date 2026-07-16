@@ -1,22 +1,22 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const User = require("../../models/User");
-const ActivityLog = require("../../models/ActivityLog");
-const generateTokens = require("../../utils/refreshToken");
+const User = require("../../models/User.js");
+const ActivityLog = require("../../models/ActivityLog.js");
+const generateTokens = require("../../utils/refreshToken.js");
 const {
   sendWelcomeEmail,
   sendPasswordResetEmail,
-} = require("../../utils/emailService");
+} = require("../../utils/emailService.js");
 const {
   getFileUrl,
   validateEmail,
   validatePasswordDetailed,
-} = require("../../utils/validators");
-const Validators = require("../../utils/validators");
+} = require("../../utils/validators.js");
+const Validators = require("../../utils/validators.js");
 const { truncate } = require("fs");
-const { createVerificationRecord } = require("../../services/verificationService");
-const Verification = require("../../models/Verification");
+const { createVerificationRecord } = require("../../services/verificationService.js");
+const Verification = require("../../models/Verification.js");
 const JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "CharityConnectRefreshSecretKey";
 
