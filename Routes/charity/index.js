@@ -6,6 +6,7 @@ const donationController = require('../../Controllers/charity/donationController
 const { formatDistanceToNow } = require('date-fns');
 const User = require('../../models/User');
 const Donation = require('../../models/Donation');
+const { upload } = require('../../config/multerConfig');
 const Campaign = require('../../models/CampaignModel');
 const mongoose = require('mongoose');
 
@@ -298,18 +299,10 @@ router.get('/donations/stats', authAndRole('charity'), async (req, res) => {
 router.put('/donations/:id/refund', authAndRole('charity'), donationController.refundDonation);
 
 /**
- * @route GET /api/charity/profile
- * @desc Get charity profile
- * @access Private (Charity only)
- */
-router.get('/profile', authAndRole('charity'), charityController.getProfile);
-
-
-/**
  * @route PUT /api/charity/profile
  * @desc Update charity profile
  * @access Private (Charity only)
  */
-router.put('/profile', authAndRole('charity'), charityController.updateProfile);
+router.put('/profile', authAndRole('charity'), upload.single('profileImage'), charityController.updateProfile);
 
 module.exports = router;

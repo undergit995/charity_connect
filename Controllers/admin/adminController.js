@@ -3,6 +3,7 @@ const User = require("../../models/User");
 const Campaign = require("../../models/CampaignModel");
 const Donation = require("../../models/Donation");
 const Verification = require("../../models/Verification");
+const { getFileUrl } = require("../../config/multerConfig");
 const ActivityLog = require("../../models/ActivityLog");
 const { sendEmail } = require("../../config/mailConfig");
 
@@ -20,12 +21,59 @@ exports.isAdmin = async (req, res, next) => {
         req.admin = user;
         next();
     } catch (error) {
-        console.error("Admin middleware error:", error);
+        // console.error("Admin middleware error:", error);
         res.status(500).json({
             success: false,
             message: "Authorization error",
             error: error.message
         });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const {
+            firstName,
+            lastName,
+            phone,
+            bio,
+            address,
+            city,
+            state,
+            country,
+            zipCode,
+        } = req.body;
+        const user = await User.findById(req.userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (firstName) user.firstName = firstName;
+        if (lastName) user.lastName = lastName;
+        if (firstName || lastName) user.fullName = `${user.firstName} ${user.lastName}`;
+        if (phone) user.phone = phone;
+        if (bio) user.bio = bio;
+
+        if (!user.address) user.address = {};
+        if (address) user.address.street = address;
+        if (city) user.address.city = city;
+        if (state) user.address.state = state;
+        if (country) user.address.country = country;
+        if (zipCode) user.address.zipCode = zipCode;
+
+        if (req.file) {
+            user.profileImage = getFileUrl(req, req.file.path);
+        }
+
+        await user.save();
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(200).json({ success: true, message: 'Profile updated successfully', data: { user: userResponse } });
+    } catch (error) {
+        // console.error('Update profile error:', error);
+        res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
     }
 };
 
@@ -148,7 +196,7 @@ exports.getCharities = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get charities error:", error);
+        // console.error("Get charities error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch charities",
@@ -237,7 +285,7 @@ exports.getDonations = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get admin donations error:", error);
+        // console.error("Get admin donations error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch donations",
@@ -309,7 +357,7 @@ exports.getCharityById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get charity details error:", error);
+        // console.error("Get charity details error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch charity details",
@@ -424,7 +472,7 @@ exports.approveCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Approve charity error:", error);
+        // console.error("Approve charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to approve charity",
@@ -521,7 +569,7 @@ exports.rejectCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Reject charity error:", error);
+        // console.error("Reject charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to reject charity",
@@ -596,7 +644,7 @@ exports.verifyCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Verify charity error:", error);
+        // console.error("Verify charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to verify charity",
@@ -675,7 +723,7 @@ exports.suspendCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Suspend charity error:", error);
+        // console.error("Suspend charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to suspend charity",
@@ -748,7 +796,7 @@ exports.activateCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Activate charity error:", error);
+        // console.error("Activate charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to activate charity",
@@ -800,7 +848,7 @@ exports.deleteCharity = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Delete charity error:", error);
+        // console.error("Delete charity error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to delete charity",
@@ -879,7 +927,7 @@ exports.getAdminStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get admin stats error:", error);
+        // console.error("Get admin stats error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch admin stats",
@@ -915,7 +963,7 @@ exports.getPublicStats = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Get public stats error:', error);
+        // console.error('Get public stats error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch public stats',

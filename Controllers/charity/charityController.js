@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Campaign = require("../../models/CampaignModel");
 const Donation = require("../../models/Donation");
+const { getFileUrl } = require("../../config/multerConfig");
 const User = require("../../models/User");
 const ActivityLog = require("../../models/ActivityLog");
 const { sendEmail } = require("../../utils/emailService");
@@ -786,10 +787,23 @@ exports.updateProfile = async (req, res) => {
       charityDetails,
     } = req.body;
 
+    if (req.files && req.files.coverImage) {
+      charity.coverImage = getFileUrl(req, req.files.coverImage[0].path);
+    }
+
+    if (req.file) {
+      charity.profileImage = getFileUrl(req, req.file.path);
+    }
+
     if (firstName) charity.firstName = firstName;
     if (lastName) charity.lastName = lastName;
     if (firstName || lastName) charity.fullName = `${charity.firstName} ${charity.lastName}`;
     if (phone) charity.phone = phone;
+    
+    
+    if (!charity.address) {
+      charity.address = {};
+    }
     if (address) charity.address.street = address;
     if (city) charity.address.city = city;
     if (state) charity.address.state = state;
@@ -798,7 +812,9 @@ exports.updateProfile = async (req, res) => {
     if (bio) charity.bio = bio;
 
     if (charityDetails) {
-      charity.charityDetails = { ...charity.charityDetails, ...charityDetails };
+      const parsedDetails = typeof charityDetails === 'string' ? JSON.parse(charityDetails) : charityDetails;
+      charity.charityDetails = charity.charityDetails || {};
+      Object.assign(charity.charityDetails, parsedDetails);
     }
 
     await charity.save();

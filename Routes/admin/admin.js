@@ -1,4 +1,3 @@
-// routes/adminRoutes.js
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -7,6 +6,7 @@ const Verification = require('../../models/Verification');
 const ActivityLog = require('../../models/ActivityLog');
 const { sendEmail } = require('../../utils/emailService');
 const adminController = require("../../Controllers/admin/adminController");
+const { upload } = require('../../config/multerConfig');
 const campaignController = require("../../Controllers/admin/campaignController");
 const { authAndRole } = require("../../middlewares/auth");
 const { getDashboardStats } = require("../../Controllers/admin/dashboardStats");
@@ -434,6 +434,13 @@ router.get("/public-stats", adminController.getPublicStats);
  * @access Public
  */
 router.use('/info', require('./settings'));
+
+/**
+ * @route PUT /api/admin/profile
+ * @desc Update admin profile
+ * @access Private (Admin only)
+ */
+router.put('/profile', authAndRole('admin'), upload.single('profileImage'), adminController.updateProfile);
 
 
 module.exports = router;

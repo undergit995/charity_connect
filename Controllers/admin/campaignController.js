@@ -115,7 +115,7 @@ exports.getCampaigns = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get admin campaigns error:", error);
+        // console.error("Get admin campaigns error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaigns",
@@ -180,7 +180,7 @@ exports.getCampaignById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get admin campaign error:", error);
+        // console.error("Get admin campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaign",
@@ -262,7 +262,7 @@ exports.approveCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Approve campaign error:", error);
+        // console.error("Approve campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to approve campaign",
@@ -339,7 +339,7 @@ exports.rejectCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Reject campaign error:", error);
+        // console.error("Reject campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to reject campaign",

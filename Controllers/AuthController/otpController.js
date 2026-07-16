@@ -18,7 +18,7 @@ exports.sendEmailOtp = async (req, res) => {
       otpId: otpData._id, // Include otpId for reference if needed
     });
   } catch (error) {
-    console.log('Send OTP email error:', error.message);
+    // console.log('Send OTP email error:', error.message);
     res.status(500).json({ success: false, message: error.message || 'Failed to send OTP' });
   }
 };
@@ -40,7 +40,7 @@ exports.verifyOtp = async (req, res) => {
       purpose: result.purpose,
     });
   } catch (error) {
-    console.error('Verify OTP error:', error);
+    // console.error('Verify OTP error:', error);
     res.status(500).json({ success: false, message: 'Failed to verify OTP' });
   }
 };
@@ -58,7 +58,7 @@ exports.resendOtp = async (req, res) => {
       expiresIn: result.expiresIn,
     });
   } catch (error) {
-    console.error('Resend OTP error:', error);
+    // console.error('Resend OTP error:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to resend OTP' });
   }
 };
@@ -72,7 +72,7 @@ exports.getOtpStatus = async (req, res) => {
     const status = await otpService.getOTPStatus(identifier);
     res.status(200).json({ success: true, data: status });
   } catch (error) {
-    console.error('Get OTP status error:', error);
+    // console.error('Get OTP status error:', error);
     res.status(500).json({ success: false, message: 'Failed to get OTP status' });
   }
 };
@@ -90,7 +90,7 @@ exports.verifyAndRegister = async (req, res) => {
         // Add registration here
         res.status(200).json({ success: true, message: 'OTP verified and user registered successfully' });
     } catch (error) {
-        console.error('Verify and register error:', error);
+        // console.error('Verify and register error:', error);
         res.status(500).json({ success: false, message: 'Failed to verify OTP and register user' });
     }
 };

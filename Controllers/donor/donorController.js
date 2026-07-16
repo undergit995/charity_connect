@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Donation = require("../../models/Donation.js");
 const { getFileUrl } = require("../../config/multerConfig.js");
+const otpService = require("../../utils/otpService.js");
 const Campaign = require("../../models/CampaignModel");
 const User = require("../../models/User");
 
@@ -436,21 +437,48 @@ exports.updateProfile = async (req, res) => {
       bio,
       donorPreferences,
       notificationPreferences,
+      emailChangeToken,
     } = req.body;
     if (firstName) donor.firstName = firstName;
     if (lastName) donor.lastName = lastName;
     if (firstName || lastName)
       donor.fullName = `${donor.firstName} ${donor.lastName}`;
     if (phone) donor.phone = phone;
+
+    // Ensure address object exists before setting properties
+    if (!donor.address) {
+      donor.address = {};
+    }
+
     if (address) donor.address.street = address;
     if (city) donor.address.city = city;
     if (state) donor.address.state = state;
     if (country) donor.address.country = country;
     if (zipCode) donor.address.zipCode = zipCode;
     if (bio) donor.bio = bio;
-    if (donorPreferences) donor.donorPreferences = donorPreferences;
-    if (notificationPreferences)
-      donor.notificationPreferences = notificationPreferences;
+    if (donorPreferences) {
+      donor.donorPreferences = typeof donorPreferences === 'string' ? JSON.parse(donorPreferences) : donorPreferences;
+    }
+
+    // Handle email change
+    if (email && email !== donor.email) {
+      if (!emailChangeToken) {
+        return res.status(400).json({ success: false, message: 'Email change requires verification token.' });
+      }
+      const verificationResult = await otpService.verifyOTP(email, emailChangeToken, 'email-change');
+      if (!verificationResult.success) {
+        return res.status(400).json({ success: false, message: `Email verification failed: ${verificationResult.message}` });
+      }
+      // Check for email uniqueness before updating
+      const existingUser = await User.findOne({ email: email });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'This email address is already in use.' });
+      }
+      donor.email = email;
+    }
+    if (notificationPreferences) {
+      donor.notificationPreferences = typeof notificationPreferences === 'string' ? JSON.parse(notificationPreferences) : notificationPreferences;
+    }
 
     // Handle file upload
     if (req.file) {
@@ -466,7 +494,7 @@ exports.updateProfile = async (req, res) => {
       .json({
         success: true,
         message: "Profile updated successfully",
-        data: updatedDonor,
+        data: { user: updatedDonor },
       });
   } catch (error) {
     console.error("Update donor profile error:", error);

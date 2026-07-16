@@ -40,13 +40,6 @@ router.get('/saved-campaigns', authAndRole('donor'), donorController.getSavedCam
 router.post('/saved-campaigns/:campaignId', authAndRole('donor'), donorController.toggleSaveCampaign);
 
 /**
- * @route GET /api/donor/profile
- * @desc Get donor profile
- * @access Private (Donor only)
- */
-router.get('/profile', authAndRole('donor'), donorController.getProfile);
-
-/**
  * @route PUT /api/donor/profile
  * @desc Update donor profile
  * @access Private (Donor only)
