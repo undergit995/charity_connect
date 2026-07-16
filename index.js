@@ -61,7 +61,7 @@ app.use("/api/auth", auth);
 console.log("Loading routes...");
 
 console.log("maintenance");
-app.use("/api/maintenance", require("./Routes/maintenance/index.js"));
+app.use("/api/maintenance", require("./Routes/Maintenance/index.js"));
 
 console.log("otp");
 app.use("/api/otp", require("./Routes/auth/otpRoute.js"));
