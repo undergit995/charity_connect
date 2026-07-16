@@ -1,12 +1,11 @@
 const otpGenerator = require('otp-generator');
-const crypto = require('crypto');
 const { sendEmail } = require('./emailService');
 const logger = require('./logger');
+const Otp = require('../models/Otp');
 
-// In-memory store for OTPs (use Redis in production)
 class OTPService {
   constructor() {
-    this.otpStore = new Map();
+    // The otpStore Map is no longer needed and will be removed.
     this.otpConfig = {
       length: 6,
       expiresIn: 300, // 5 minutes
@@ -19,11 +18,7 @@ class OTPService {
     };
   }
 
-  /**
-   * Generate a random OTP using otp-generator
-   * @param {number} length - Length of OTP
-   * @returns {string} - Generated OTP
-   */
+  
   generateOTP(length = this.otpConfig.length) {
     return otpGenerator.generate(length, {
       digits: this.otpConfig.digits,
@@ -34,73 +29,40 @@ class OTPService {
   }
 
   /**
-   * Generate a unique OTP ID
-   * @returns {string} - Unique OTP ID
-   */
-  generateOTPId() {
-    return crypto.randomBytes(16).toString('hex');
-  }
-
-  /**
    * Create and store OTP
    * @param {string} identifier - Email or phone number
    * @param {string} type - 'email' or 'phone'
    * @param {string} purpose - 'verification', 'login', 'reset-password'
    * @returns {Object} - OTP details
    */
-  createOTP(identifier, type = 'email', purpose = 'verification') {
-    // Check if there's an existing OTP
-    const existing = this.getOTP(identifier);
-    if (existing) {
-      const timeSinceCreation = Date.now() - existing.createdAt;
-      if (timeSinceCreation < this.otpConfig.resendCooldown * 1000) {
-        throw new Error(`Please wait ${this.otpConfig.resendCooldown} seconds before requesting a new OTP`);
+  async createOTP(identifier, type = 'email', purpose = 'verification') {
+    try {
+      const existing = await Otp.findOne({ identifier, purpose });
+      if (existing) {
+        const timeSinceCreation = Date.now() - new Date(existing.createdAt).getTime();
+        if (timeSinceCreation < this.otpConfig.resendCooldown * 1000) {
+          throw new Error(`Please wait ${this.otpConfig.resendCooldown} seconds before requesting a new OTP`);
+        }
+        // Delete old OTP to generate a new one
+        await Otp.deleteOne({ _id: existing._id });
       }
+
+      const otp = this.generateOTP();
+      const expiresAt = new Date(Date.now() + this.otpConfig.expiresIn * 1000);
+
+      const newOtp = new Otp({
+        identifier,
+        otp,
+        purpose,
+        expiresAt,
+      });
+
+      await newOtp.save();
+      return newOtp.toObject();
+    } catch (error) {
+      logger.error('Error creating OTP:', error.message);
+      throw new Error('Failed to create OTP');
     }
-
-    const otp = this.generateOTP();
-    const otpId = this.generateOTPId();
-    const expiresAt = Date.now() + this.otpConfig.expiresIn * 1000;
-
-    const otpData = {
-      id: otpId,
-      identifier,
-      otp,
-      type,
-      purpose,
-      attempts: 0,
-      maxAttempts: this.otpConfig.maxAttempts,
-      createdAt: Date.now(),
-      expiresAt,
-      verified: false,
-    };
-
-    this.otpStore.set(identifier, otpData);
-
-    // Auto-cleanup after expiry
-    setTimeout(() => {
-      this.otpStore.delete(identifier);
-    }, this.otpConfig.expiresIn * 1000);
-
-    return otpData;
-  }
-
-  /**
-   * Get OTP for identifier
-   * @param {string} identifier - Email or phone number
-   * @returns {Object|null} - OTP data or null
-   */
-  getOTP(identifier) {
-    const otpData = this.otpStore.get(identifier);
-    if (!otpData) return null;
-
-    // Check if OTP is expired
-    if (Date.now() > otpData.expiresAt) {
-      this.otpStore.delete(identifier);
-      return null;
-    }
-
-    return otpData;
   }
 
   /**
@@ -110,54 +72,49 @@ class OTPService {
    * @param {string} purpose - 'verification', 'login', 'reset-password'
    * @returns {Object} - Verification result
    */
-  verifyOTP(identifier, otp, purpose = 'verification') {
-    const otpData = this.getOTP(identifier);
-    
-    if (!otpData) {
+  async verifyOTP(identifier, otp, purpose = 'verification') {
+    const otpRecord = await Otp.findOne({ identifier, purpose });
+
+    if (!otpRecord) {
       return {
         success: false,
         message: 'OTP not found or expired. Please request a new one.',
       };
     }
 
-    if (otpData.verified) {
+    if (new Date() > new Date(otpRecord.expiresAt)) {
+      await Otp.deleteOne({ _id: otpRecord._id });
       return {
         success: false,
-        message: 'OTP already verified. Please request a new one.',
+        message: 'OTP has expired. Please request a new one.',
       };
     }
 
-    if (otpData.purpose !== purpose) {
-      return {
-        success: false,
-        message: `Invalid OTP purpose. Expected: ${otpData.purpose}`,
-      };
-    }
-
-    if (otpData.attempts >= otpData.maxAttempts) {
-      this.otpStore.delete(identifier);
+    if (otpRecord.attempts >= this.otpConfig.maxAttempts) {
+      await Otp.deleteOne({ _id: otpRecord._id });
       return {
         success: false,
         message: 'Maximum attempts exceeded. Please request a new OTP.',
       };
     }
 
-    otpData.attempts += 1;
-
-    if (otpData.otp !== otp) {
+    if (otpRecord.otp !== otp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
       return {
         success: false,
-        message: `Invalid OTP. ${otpData.maxAttempts - otpData.attempts} attempts remaining.`,
+        message: `Invalid OTP. ${this.otpConfig.maxAttempts - otpRecord.attempts} attempts remaining.`,
       };
     }
 
     // OTP is correct
-    otpData.verified = true;
+    await Otp.deleteOne({ _id: otpRecord._id });
+
     return {
       success: true,
       message: 'OTP verified successfully!',
-      identifier: otpData.identifier,
-      purpose: otpData.purpose,
+      identifier: otpRecord.identifier,
+      purpose: otpRecord.purpose,
     };
   }
 
@@ -170,21 +127,13 @@ class OTPService {
    */
   async sendOTPEmail(email, purpose = 'verification', options = {}) {
     try {
-      const otpData = this.createOTP(email, 'email', purpose);
-      
-      const emailContent = this.getEmailTemplate(otpData.otp, purpose);
-
-      await sendEmail({
-        to: email,
-        subject: `${purpose.charAt(0).toUpperCase() + purpose.slice(1)} OTP - CharityConnect`,
-        html: emailContent,
-        ...options,
-      });
+      // This function now primarily creates the OTP. The sending is handled by the controller.
+      const otpData = await this.createOTP(email, 'email', purpose);
 
       return {
         success: true,
         message: `OTP sent to your email for ${purpose}`,
-        otpId: otpData.id,
+        otp: otpData.otp, // Return the OTP to be sent by the controller
         expiresIn: this.otpConfig.expiresIn,
       };
     } catch (error) {
@@ -199,16 +148,16 @@ class OTPService {
    * @param {string} purpose - Purpose of OTP
    * @returns {string} - HTML email template
    */
-  getEmailTemplate(otp, purpose) {
+  getEmailTemplate(otp, purpose, data = {}) {
     const purposeMap = {
       verification: 'Verify your email address',
       login: 'Secure login verification',
       'reset-password': 'Password reset verification',
     };
-
+    const { expiresIn = 5 } = data;
     const purposeText = purposeMap[purpose] || 'Verification';
 
-    return `
+    const html = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -234,8 +183,8 @@ class OTPService {
             <div class="otp-box">
               <div class="otp-code">${otp}</div>
             </div>
-            <p class="info">This OTP is valid for <strong>5 minutes</strong>. Do not share this code with anyone.</p>
-            <p class="info">If you didn't request this, please ignore this email or contact support.</p>
+            <p class="info">This OTP is valid for <strong>${expiresIn} minutes</strong>. Do not share this code with anyone.</p>
+            <p class="info">If you didn't request this, please ignore this email or contact our support team.</p>
             <div class="footer">
               <p>&copy; ${new Date().getFullYear()} CharityConnect. All rights reserved.</p>
             </div>
@@ -243,6 +192,8 @@ class OTPService {
         </body>
       </html>
     `;
+
+    return { html };
   }
 
   /**
@@ -284,25 +235,14 @@ class OTPService {
    * @returns {Object} - Result
    */
   async resendOTP(identifier, type = 'email', purpose = 'verification') {
-    // Delete existing OTP
-    this.otpStore.delete(identifier);
+    await Otp.deleteMany({ identifier, purpose });
     
     if (type === 'email') {
       return await this.sendOTPEmail(identifier, purpose);
     } else {
-      return await this.sendOTPSMS(identifier, purpose);
-    }
-  }
-
-  /**
-   * Clear expired OTPs
-   */
-  clearExpiredOTPs() {
-    const now = Date.now();
-    for (const [key, value] of this.otpStore.entries()) {
-      if (now > value.expiresAt) {
-        this.otpStore.delete(key);
-      }
+      // Placeholder for future SMS implementation
+      // return await this.sendOTPSMS(identifier, purpose);
+      throw new Error('SMS resend not implemented');
     }
   }
 
@@ -311,22 +251,25 @@ class OTPService {
    * @param {string} identifier - Email or phone number
    * @returns {Object} - OTP status
    */
-  getOTPStatus(identifier) {
-    const otpData = this.getOTP(identifier);
-    if (!otpData) {
+  async getOTPStatus(identifier) {
+    const otpRecord = await Otp.findOne({ identifier });
+    if (!otpRecord) {
       return {
         exists: false,
         message: 'No active OTP found',
       };
     }
 
+    if (new Date() > new Date(otpRecord.expiresAt)) {
+      return { exists: false, message: 'OTP expired' };
+    }
+
     return {
       exists: true,
-      verified: otpData.verified,
-      attempts: otpData.attempts,
-      maxAttempts: otpData.maxAttempts,
-      expiresIn: Math.floor((otpData.expiresAt - Date.now()) / 1000),
-      purpose: otpData.purpose,
+      attempts: otpRecord.attempts,
+      maxAttempts: this.otpConfig.maxAttempts,
+      expiresIn: Math.floor((new Date(otpRecord.expiresAt).getTime() - Date.now()) / 1000),
+      purpose: otpRecord.purpose,
     };
   }
 }
@@ -334,9 +277,52 @@ class OTPService {
 // Export singleton instance
 const otpService = new OTPService();
 
-// Clear expired OTPs every 5 minutes
-setInterval(() => {
-  otpService.clearExpiredOTPs();
-}, 300000);
-
 module.exports = otpService;
+
+
+/*   await Otp.deleteMany({ identifier, purpose });
+    
+    if (type === 'email') {
+      return await this.sendOTPEmail(identifier, purpose);
+    } else {
+      // Placeholder for future SMS implementation
+      // return await this.sendOTPSMS(identifier, purpose);
+      throw new Error('SMS resend not implemented');
+    }
+  }
+
+  async clearExpiredOTPs() {
+    await Otp.deleteMany({ expiresAt: { $lt: new Date() } });
+  }
+
+  async getOTPStatus(identifier) {
+    const otpRecord = await Otp.findOne({ identifier });
+    if (!otpRecord) {
+      return {
+        exists: false,
+        message: 'No active OTP found',
+      };
+    }
+
+    if (new Date() > new Date(otpRecord.expiresAt)) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      return { exists: false, message: 'OTP expired' };
+    }
+
+    return {
+      exists: true,
+      attempts: otpRecord.attempts,
+      maxAttempts: this.otpConfig.maxAttempts,
+      expiresIn: Math.floor((new Date(otpRecord.expiresAt).getTime() - Date.now()) / 1000),
+      purpose: otpRecord.purpose,
+    };
+  }
+}
+
+// Export singleton instance
+const otpService = new OTPService();
+
+setInterval(() => {
+  otpService.clearExpiredOTPs().catch(err => logger.error('Error clearing expired OTPs:', err));
+}, 300000);
+ */

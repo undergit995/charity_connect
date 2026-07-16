@@ -47,6 +47,16 @@ const donationSchema = new mongoose.Schema(
       type: String, 
       default: "USD",
       enum: ["USD", "EUR", "GBP", "INR"]
+    }, // Track if donation exceeded goal
+    exceededGoal: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Over-goal donation tracking
+    overGoalAmount: {
+      type: Number,
+      default: 0,
     },
 
     // Payment Information
@@ -57,8 +67,8 @@ const donationSchema = new mongoose.Schema(
     },
     transactionId: { 
       type: String, 
-      // required: [true, "Transaction ID is required"],
       unique: true,
+      sparse:true,
       trim: true
     },
     paymentGateway: {
@@ -333,6 +343,7 @@ donationSchema.index({ charityId: 1, status: 1 });
 donationSchema.index({ donationDate: -1 });
 donationSchema.index({ receiptNumber: 1 }, { unique: true, sparse: true });
 donationSchema.index({ status: 1, createdAt: -1 });
+donationSchema.index({ exceededGoal: 1, campaignId: 1 });
 
 // Compound indexes for reporting
 donationSchema.index({ donationDate: -1, status: 1 });

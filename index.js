@@ -38,21 +38,15 @@ app.use("/api/charity", require("./routes/charity/index"));
 app.use("/api/donations", require("./Routes/donation/donation"));
 app.use("/api/campaigns", require("./routes/campaign/campaign"));
 app.use("/api/payments", require("./Routes/payment/index"));
-// app.use("/api/public", require("./routes/public/index"));
-// app.use("/api/user", require("./routes/user/index"));
-// app.use("/api/donor", require("./routes/donor/index"));
+app.use("/api/verification", require("./routes/verification/verification"));
+app.use("/api/contact", require("./routes/contact/index"));
+app.use("/api/info", require("./routes/admin/settings"));
+app.use("/api/donor", require("./routes/donor/index"));
 
 
 // Global error handler
 // app.use(globalErrorHandler);
 
-// 404 handler
-// app.use('(*/)', (req, res) => {
-//     res.status(404).json({
-//         status: 'fail',
-//         message: `Route ${req.originalUrl} not found`
-//     });
-// });
 
 const PORT = process.env.PORT || 5000;
 

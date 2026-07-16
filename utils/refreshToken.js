@@ -4,18 +4,28 @@ const JWT_SECRET = process.env.JWT_SECRET || "CharityConnectSecretKey";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "CharityConnectRefreshSecretKey";
 
 const generateTokens = (user, existingRefreshToken = null) => {
-  const payload = {
+  
+  const userForPayload = {
+    _id: user._id,
     id: user._id,
     userId: user._id,
     email: user.email,
     role: user.role,
+    fullName: user.fullName,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImage: user.profileImage,
+  };
+
+  const payload = {
+    user: userForPayload,
     permissions: user.permissions || [],
     tokenVersion: user.tokenVersion || 0,
   };
 
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' }); // Increased for better UX
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '10m' });
 
-  // Generate a new refresh token only if one isn't provided.
+  
   const refreshToken = existingRefreshToken
     ? existingRefreshToken
     : jwt.sign(

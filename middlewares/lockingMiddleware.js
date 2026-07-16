@@ -1,4 +1,3 @@
-// middleware/lockMiddleware.js
 const LockingService = require('../services/LockingService');
 
 const lockMiddleware = async (req, res, next) => {

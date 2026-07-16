@@ -1,7 +1,6 @@
 require("dotenv").config();
-const nodemailer = require("nodemailer");
 const logger = require("./logger");
-const { mailConfig } = require("../config/mailConfig");
+const { sendEmail } = require("../config/mailConfig");
 
 const getEmailTemplate = (template, data) => {
   const templates = {
@@ -15,16 +14,16 @@ const getEmailTemplate = (template, data) => {
     charityRejected: getCharityRejectedTemplate(data),
     donationConfirmation: getDonationConfirmationTemplate(data),
     campaignUpdate: getCampaignUpdateTemplate(data),
-    adminNotification: getAdminNotificationTemplate(data),
-    contactUs: getContactUsTemplate(data),
-    newsletter: getNewsletterTemplate(data),
+    // adminNotification: getAdminNotificationTemplate(data),
+    // contactUs: getContactUsTemplate(data),
+    // newsletter: getNewsletterTemplate(data),
     otpVerification: getOTPVerificationTemplate(data),
     passwordChanged: getPasswordChangedTemplate(data),
-    accountDeactivated: getAccountDeactivatedTemplate(data),
-    accountReactivated: getAccountReactivatedTemplate(data),
+    // accountDeactivated: getAccountDeactivatedTemplate(data),
+    // accountReactivated: getAccountReactivatedTemplate(data),
     newDonation: getNewDonationTemplate(data),
-    campaignExpiring: getCampaignExpiringTemplate(data),
-    monthlyReport: getMonthlyReportTemplate(data),
+    // campaignExpiring: getCampaignExpiringTemplate(data),
+    // monthlyReport: getMonthlyReportTemplate(data),
   };
 
   return templates[template] || getDefaultTemplate(data);
@@ -194,7 +193,7 @@ const getResetPasswordTemplate = (data) => {
           </div>
           
           <p>This link will expire in <strong>1 hour</strong>.</p>
-          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <p>If the button doesn't work, copy and paste this token into token input box in registration page:</p>
           <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
           
           <div class="warning">
@@ -297,6 +296,212 @@ const getDonationReceiptTemplate = (data) => {
 };
 
 /**
+ * Generic Verification Template (Link-based)
+ */
+const getVerificationTemplate = (data) => {
+  const { name, verificationUrl, purpose = 'verify your account' } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+          .header { text-align: center; margin-bottom: 30px; }
+          .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+          .button { display: inline-block; padding: 14px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }
+          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 12px; color: #adb5bd; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">❤️ CharityConnect</div>
+          </div>
+          <h2 style="color: #1a1a2e;">Please ${purpose}</h2>
+          <p>Hello ${name || 'User'},</p>
+          <p>Please click the button below to complete the verification process.</p>
+          <div style="text-align: center;">
+            <a href="${verificationUrl}" class="button">Verify Now</a>
+          </div>
+          <p>If you did not request this, please ignore this email.</p>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} CharityConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Campaign Approved Template
+ */
+const getCampaignApprovedTemplate = (data) => {
+  const { charityName, campaignTitle, campaignUrl } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Campaign Approved! 🎉</h2>
+          <p>Dear ${charityName},</p>
+          <p>Great news! Your campaign "<strong>${campaignTitle}</strong>" has been reviewed and approved. It is now live and ready to receive donations.</p>
+          <a href="${campaignUrl}" class="button">View Your Campaign</a>
+          <p>Best of luck in reaching your goal!</p>
+        </div>
+      </body>
+    </html>
+  `;
+};
+/**
+ * Campaign Approved Template
+ */
+const getCampaignUpdateTemplate = (data) => {
+  const { charityName, campaignTitle, campaignUrl } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Campaign Updated! 🎉</h2>
+          <p>Dear ${charityName},</p>
+          <p>Update! Your campaign "<strong>${campaignTitle}</strong>" has been updated</p>
+          <a href="${campaignUrl}" class="button">View Your updated Campaign</a>
+          <p>Best of luck in reaching your goal!</p>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Campaign Rejected Template
+ */
+const getCampaignRejectedTemplate = (data) => {
+  const { charityName, campaignTitle, reason, editUrl } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Campaign Needs Attention</h2>
+          <p>Dear ${charityName},</p>
+          <p>Regarding your campaign "<strong>${campaignTitle}</strong>", our review team has requested some changes. Here is the feedback:</p>
+          <div class="feedback-box"><p>${reason}</p></div>
+          <p>Please update your campaign and resubmit it for approval.</p>
+          <a href="${editUrl}" class="button">Edit Your Campaign</a>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Charity Approved Template
+ */
+const getCharityApprovedTemplate = (data) => {
+  const { charityName, dashboardUrl } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Welcome to the Community!</h2>
+          <p>Dear ${charityName},</p>
+          <p>We are thrilled to inform you that your charity has been approved and is now a verified member of CharityConnect!</p>
+          <p>You can now create campaigns and start fundraising.</p>
+          <a href="${dashboardUrl}" class="button">Go to Your Dashboard</a>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Charity Rejected Template
+ */
+const getCharityRejectedTemplate = (data) => {
+  const { charityName, reason } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Update on Your Charity Application</h2>
+          <p>Dear ${charityName},</p>
+          <p>Thank you for your interest in joining CharityConnect. After reviewing your application, we require some additional information. Here is the feedback from our team:</p>
+          <div class="feedback-box"><p>${reason}</p></div>
+          <p>Please log in to your account to provide the necessary details. If you have any questions, please contact our support team.</p>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Donation Confirmation Template
+ */
+const getDonationConfirmationTemplate = (data) => {
+  const { donorName, amount, campaignName, receiptUrl } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Thank You for Your Donation!</h2>
+          <p>Dear ${donorName},</p>
+          <p>Your generous donation of <strong>$${amount}</strong> to the "<strong>${campaignName}</strong>" campaign has been successfully processed.</p>
+          <p>Your contribution is making a real difference. You can view your receipt below.</p>
+          <a href="${receiptUrl}" class="button">View Receipt</a>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Password Changed Template
+ */
+const getPasswordChangedTemplate = (data) => {
+  const { name } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>Password Changed Successfully</h2>
+          <p>Hello ${name},</p>
+          <p>This is a confirmation that the password for your CharityConnect account has been changed.</p>
+          <p>If you did not make this change, please contact our support team immediately.</p>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * New Donation Notification Template (for Charities)
+ */
+const getNewDonationTemplate = (data) => {
+  const { campaignName, amount, donorName } = data;
+  return `
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div class="container">
+          <h2>You've Received a New Donation!</h2>
+          <p>Congratulations! Your campaign "<strong>${campaignName}</strong>" has received a new donation.</p>
+          <p><strong>Amount:</strong> $${amount}</p>
+          <p><strong>From:</strong> ${donorName}</p>
+          <p>Keep up the great work!</p>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
  * Default Template (Fallback)
  */
 const getDefaultTemplate = (data) => {
@@ -324,6 +529,7 @@ const getDefaultTemplate = (data) => {
     </html>
   `;
 };
+
 
 
 
@@ -438,7 +644,7 @@ const sendTemplateEmail = async (to, template, data, subject = null) => {
       html,
     });
   } catch (error) {
-    logger.error('Template email send error:', error);
+    logger.error('Template email send error:', error.message);
     throw error;
   }
 };
@@ -456,7 +662,12 @@ const sendWelcomeEmail = async (to, name, role) => {
  * Send OTP verification email
  */
 const sendOTPEmail = async (to, otp, purpose = 'verification', expiresIn = 5) => {
-  return await sendTemplateEmail(to, 'otpVerification', { otp, purpose, expiresIn });
+  try{
+    return await sendTemplateEmail(to, 'otpVerification', { otp, purpose, expiresIn });
+  }catch(error){
+    logger.error('OTP email send error:', error.message);
+    throw error;
+  }
 };
 
 /**
@@ -473,25 +684,6 @@ const sendDonationReceiptEmail = async (to, data) => {
   return await sendTemplateEmail(to, 'donationReceipt', data);
 };
 
-const localTransporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-const sendEmail = async (options) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-  };
-
-  // Calling it directly on the object it was instantiated from keeps 'getSocket' happy
-  return await localTransporter.sendMail(mailOptions);
-};
 
 module.exports = {
   sendEmail,

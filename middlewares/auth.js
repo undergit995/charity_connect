@@ -50,7 +50,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Check if user exists
-    const user = await User.findById(decoded.id || decoded.userId)
+    const user = await User.findById(decoded.user?.id || decoded.user?._id || decoded.id || decoded.userId)
       .select('-password -resetPasswordToken -resetPasswordExpires');
 
     if (!user) {
@@ -82,12 +82,9 @@ const authMiddleware = async (req, res, next) => {
     req.userRole = user.role;
     req.userPermissions = user.permissions || [];
 
-    // Log user activity (optional - can be moved to a separate middleware)
-    // logger.info(`User ${user.email} accessed ${req.method} ${req.path}`);
-
     next();
   } catch (error) {
-    // logger.error('Auth middleware error:', error);
+    logger.error('Auth middleware error:', error);
     return res.status(500).json({
       success: false,
       message: 'Authentication error. Please try again.',
@@ -169,7 +166,7 @@ const optionalAuth = async (req, res, next) => {
       if (token) {
         try {
           const decoded = jwt.verify(token, JWT_SECRET);
-          const user = await User.findById(decoded.id || decoded.userId)
+          const user = await User.findById(decoded.user?.id || decoded.user?._id || decoded.id || decoded.userId)
             .select('-password -resetPasswordToken -resetPasswordExpires');
           
           if (user && user.isActive && !user.isDeleted) {

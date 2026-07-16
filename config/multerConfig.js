@@ -1,4 +1,3 @@
-// middleware/uploadMiddleware.js
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -91,7 +90,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, 
     files: 10, // Max 10 files per request
   },
   fileFilter: fileFilter,
@@ -178,10 +177,12 @@ const uploadCampaignMedia = uploadFields([
 // ==================== HELPER FUNCTIONS ====================
 
 // Get file URL
-const getFileUrl = (req, filename) => {
-  if (!filename) return null;
+const getFileUrl = (req, filePath) => {
+  if (!filePath) return null;
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  return `${baseUrl}/uploads/${filename}`;
+  // The path from multer is like 'uploads\\profiles\\image.jpg', so we need to make it a valid URL path.
+  const urlPath = filePath.replace(/\\/g, '/').replace('uploads/', '');
+  return `${baseUrl}/uploads/${urlPath}`;
 };
 
 // Delete file

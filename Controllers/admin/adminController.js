@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../../models/User");
 const Campaign = require("../../models/CampaignModel");
 const Donation = require("../../models/Donation");
+const Verification = require("../../models/Verification");
 const ActivityLog = require("../../models/ActivityLog");
 const { sendEmail } = require("../../config/mailConfig");
 
@@ -157,6 +158,95 @@ exports.getCharities = async (req, res) => {
 };
 
 /**
+ * @route GET /api/admin/donations
+ * @desc Get all donations with filters
+ * @access Private (Admin only)
+ */
+exports.getDonations = async (req, res) => {
+    try {
+        const { 
+            page = 1, 
+            limit = 10, 
+            search = '', 
+            status = 'all',
+            campaignId,
+            charityId
+        } = req.query;
+
+        const query = {};
+
+        // Filter by status
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+        
+        if (campaignId) {
+            query.campaignId = campaignId;
+        }
+
+        if (charityId) {
+            query.charityId = charityId;
+        }
+
+        // Search
+        if (search) {
+            const users = await User.find({
+                $or: [
+                    { fullName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                ]
+            }).select('_id');
+            const userIds = users.map(u => u._id);
+
+            const campaigns = await Campaign.find({
+                title: { $regex: search, $options: 'i' }
+            }).select('_id');
+            const campaignIds = campaigns.map(c => c._id);
+
+            query.$or = [
+                { transactionId: { $regex: search, $options: 'i' } },
+                { receiptNumber: { $regex: search, $options: 'i' } },
+                { donorId: { $in: userIds } },
+                { charityId: { $in: userIds } },
+                { campaignId: { $in: campaignIds } },
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [donations, total] = await Promise.all([
+            Donation.find(query)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ donationDate: -1 })
+                .populate('donorId', 'fullName email')
+                .populate('charityId', 'charityDetails.organizationName fullName')
+                .populate('campaignId', 'title'),
+            Donation.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            donations,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / parseInt(limit))
+            }
+        });
+
+    } catch (error) {
+        console.error("Get admin donations error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch donations",
+            error: error.message
+        });
+    }
+};
+
+/**
  * @route GET /api/admin/charities/:id
  * @desc Get single charity details
  * @access Private (Admin only)
@@ -174,7 +264,6 @@ exports.getCharityById = async (req, res) => {
 
         const charity = await User.findById(id)
             .select('-password -resetPasswordToken -resetPasswordExpires')
-            .populate('campaigns', 'title status raisedAmount goalAmount');
 
         if (!charity || charity.role !== "charity") {
             return res.status(404).json({
@@ -182,6 +271,12 @@ exports.getCharityById = async (req, res) => {
                 message: "Charity not found"
             });
         }
+
+        // Fetch campaigns separately
+        const campaigns = await Campaign.find({ charityId: id }).select(
+            "title status raisedAmount goalAmount"
+        );
+
 
         // Get campaign stats
         const campaignStats = await Campaign.aggregate([
@@ -203,6 +298,7 @@ exports.getCharityById = async (req, res) => {
             success: true,
             data: {
                 charity,
+                campaigns,
                 campaignStats: campaignStats[0] || {
                     totalCampaigns: 0,
                     activeCampaigns: 0,
@@ -252,7 +348,24 @@ exports.approveCharity = async (req, res) => {
         charity.approvedAt = new Date();
         charity.approvedBy = req.userId;
         charity.rejectionReason = null;
+        charity.isVerified = true; // Set the main verification flag
         await charity.save();
+
+        // Also update the verification documents to 'verified'
+        const verification = await Verification.findOne({ charityId: charity._id });
+        if (verification) {
+            verification.documents.forEach(doc => {
+                if (doc.status !== 'verified') {
+                    doc.status = 'verified';
+                    doc.verifiedAt = new Date();
+                    doc.verifiedBy = req.userId;
+                    doc.adminNotes = 'Automatically approved by admin action.';
+                }
+            });
+            verification.status = 'verified';
+            verification.reviewedAt = new Date();
+            await verification.save();
+        }
 
         // Log activity
         await ActivityLog.create({
@@ -770,6 +883,42 @@ exports.getAdminStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch admin stats",
+            error: error.message
+        });
+    }
+};
+
+exports.getPublicStats = async (req, res) => {
+    try {
+        const [
+            totalDonors,
+            totalRaised,
+            campaignsFunded,
+            totalCharities
+        ] = await Promise.all([
+            User.countDocuments({ role: 'donor', isActive: true }),
+            Donation.aggregate([
+                { $match: { status: 'Completed' } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Campaign.countDocuments({ status: 'completed' }),
+            User.countDocuments({ role: 'charity', isApproved: true, isActive: true })
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalDonors,
+                totalRaised: totalRaised[0]?.total || 0,
+                campaignsFunded,
+                totalCharities
+            }
+        });
+    } catch (error) {
+        console.error('Get public stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch public stats',
             error: error.message
         });
     }

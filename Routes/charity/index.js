@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const Campaign = require('../../models/CampaignModel');
-const Donation = require('../../models/Donation');
+const { authAndRole } = require('../../middlewares/auth');
+const charityController = require('../../Controllers/charity/charityController');
+const donationController = require('../../Controllers/charity/donationController');
+const { formatDistanceToNow } = require('date-fns');
 const User = require('../../models/User');
-// const { uploadCampaignImages, deleteFile } = require('../../middlewares/uploadMiddleware');
-const { sendEmail } = require('../../utils/emailService');
-const { authMiddleware } = require('../../middlewares/auth');
+const Donation = require('../../models/Donation');
+const Campaign = require('../../models/CampaignModel');
+const mongoose = require('mongoose');
+
+
 
 // ==================== CHARITY CAMPAIGN ROUTES ====================
 
@@ -15,762 +18,298 @@ const { authMiddleware } = require('../../middlewares/auth');
  * @desc Get all campaigns for the logged-in charity
  * @access Private (Charity only)
  */
-router.get('/campaigns', authMiddleware, async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search = '',
-      status = 'all',
-    } = req.query;
-
-    // Verify user is a charity
-    const user = await User.findById(req.userId);
-    if (!user || user.role !== 'charity') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only charities can access this endpoint.',
-      });
-    }
-
-    const query = {
-      charityId: req.userId,
-      isDeleted: false,
-    };
-
-    // Filter by status
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-
-    // Search
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Get campaigns with version for optimistic locking
-    const [campaigns, total] = await Promise.all([
-      Campaign.find(query)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .sort({ createdAt: -1 })
-        .select('+__v'),
-      Campaign.countDocuments(query),
-    ]);
-
-    // Get campaign statistics
-    const stats = await Campaign.aggregate([
-      { $match: { charityId: req.userId, isDeleted: false } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          active: {
-            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] },
-          },
-          draft: {
-            $sum: { $cond: [{ $eq: ['$status', 'draft'] }, 1, 0] },
-          },
-          pending: {
-            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
-          },
-          paused: {
-            $sum: { $cond: [{ $eq: ['$status', 'paused'] }, 1, 0] },
-          },
-          completed: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-
-    // Get version for optimistic locking
-    const version = await Campaign.findOne({ charityId: req.userId })
-      .sort({ updatedAt: -1 })
-      .select('__v');
-
-    res.status(200).json({
-      success: true,
-      campaigns,
-      stats: stats[0] || {
-        total: 0,
-        active: 0,
-        draft: 0,
-        pending: 0,
-        paused: 0,
-        completed: 0,
-      },
-      version: version?.__v || 0,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-
-  } catch (error) {
-    console.error('Get charity campaigns error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch campaigns',
-      error: error.message,
-    });
-  }
-});
+router.get('/campaigns', authAndRole('charity'), charityController.getCharityCampaigns);
 
 /**
  * @route GET /api/charity/campaigns/:id
  * @desc Get single campaign for charity
  * @access Private (Charity owner)
  */
-router.get('/campaigns/:id', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    }).select('+__v');
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Get charity campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch campaign',
-      error: error.message,
-    });
-  }
-});
+router.get('/campaigns/:id', authAndRole('charity'), charityController.getCampaignById);
 
 /**
  * @route PUT /api/charity/campaigns/:id/submit
  * @desc Submit campaign for review
  * @access Private (Charity owner)
  */
-router.put('/campaigns/:id/submit', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    if (campaign.status !== 'draft') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only draft campaigns can be submitted for review',
-      });
-    }
-
-    campaign.status = 'pending';
-    campaign.approvalStatus = 'pending';
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    // Notify admin
-    const admins = await User.find({ role: 'admin' });
-    for (const admin of admins) {
-      await sendEmail({
-        to: admin.email,
-        subject: `New Campaign Pending Approval: ${campaign.title}`,
-        html: `
-          <h2>New Campaign Submitted for Review</h2>
-          <p><strong>Campaign:</strong> ${campaign.title}</p>
-          <p><strong>Charity:</strong> ${campaign.charityId?.fullName || 'Unknown'}</p>
-          <p><strong>Goal:</strong> $${campaign.goalAmount}</p>
-          <p><a href="${process.env.FRONTEND_URL}/admin/campaigns/${campaign._id}">Review Campaign</a></p>
-        `,
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Campaign submitted for review successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Submit campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit campaign',
-      error: error.message,
-    });
-  }
-});
+router.put('/campaigns/:id/submit', authAndRole('charity'), charityController.submitCampaignForReview);
 
 /**
  * @route PUT /api/charity/campaigns/:id/pause
  * @desc Pause campaign
  * @access Private (Charity owner)
  */
-router.put('/campaigns/:id/pause', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    if (campaign.status !== 'active') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only active campaigns can be paused',
-      });
-    }
-
-    campaign.status = 'paused';
-    campaign.isActive = false;
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Campaign paused successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Pause campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to pause campaign',
-      error: error.message,
-    });
-  }
-});
+router.put('/campaigns/:id/pause', authAndRole('charity'), charityController.pauseCampaign);
 
 /**
  * @route PUT /api/charity/campaigns/:id/resume
  * @desc Resume campaign
  * @access Private (Charity owner)
  */
-router.put('/campaigns/:id/resume', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    if (campaign.status !== 'paused') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only paused campaigns can be resumed',
-      });
-    }
-
-    campaign.status = 'active';
-    campaign.isActive = true;
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Campaign resumed successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Resume campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to resume campaign',
-      error: error.message,
-    });
-  }
-});
+router.put('/campaigns/:id/resume', authAndRole('charity'), charityController.resumeCampaign);
 
 /**
  * @route PUT /api/charity/campaigns/:id/complete
  * @desc Complete campaign
  * @access Private (Charity owner)
  */
-router.put('/campaigns/:id/complete', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    if (campaign.status !== 'active' && campaign.status !== 'paused') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only active or paused campaigns can be marked as completed',
-      });
-    }
-
-    campaign.status = 'completed';
-    campaign.isActive = false;
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    // Notify donors
-    const donations = await Donation.find({ campaignId: id })
-      .populate('donorId', 'email fullName')
-      .limit(100);
-
-    for (const donation of donations) {
-      if (donation.donorId?.email) {
-        await sendEmail({
-          to: donation.donorId.email,
-          subject: `Campaign "${campaign.title}" Completed! 🎉`,
-          html: `
-            <h2>Campaign Completed Successfully!</h2>
-            <p>Dear ${donation.donorId.fullName || 'Donor'},</p>
-            <p>The campaign "<strong>${campaign.title}</strong>" has been successfully completed!</p>
-            <p><strong>Total Raised:</strong> $${campaign.raisedAmount}</p>
-            <p><strong>Total Donors:</strong> ${campaign.stats?.donorCount || 0}</p>
-            <p>Thank you for your generous support! 🎉</p>
-          `,
-        });
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Campaign completed successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Complete campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to complete campaign',
-      error: error.message,
-    });
-  }
-});
+router.put('/campaigns/:id/complete', authAndRole('charity'), charityController.completeCampaign);
 
 /**
  * @route PUT /api/charity/campaigns/:id/cancel-request
  * @desc Cancel pending request
  * @access Private (Charity owner)
  */
-router.put('/campaigns/:id/cancel-request', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    if (campaign.status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only pending campaigns can be cancelled',
-      });
-    }
-
-    campaign.status = 'draft';
-    campaign.approvalStatus = 'pending';
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Pending request cancelled successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Cancel request error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cancel request',
-      error: error.message,
-    });
-  }
-});
+router.put('/campaigns/:id/cancel-request', authAndRole('charity'), charityController.cancelRequest);
 
 /**
  * @route DELETE /api/charity/campaigns/:id
  * @desc Delete campaign (soft delete)
  * @access Private (Charity owner)
  */
-router.delete('/campaigns/:id', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { version } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid campaign ID',
-      });
-    }
-
-    const campaign = await Campaign.findOne({
-      _id: id,
-      charityId: req.userId,
-      isDeleted: false,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found or you do not have access',
-      });
-    }
-
-    // Check version for optimistic locking
-    if (campaign.__v !== parseInt(version)) {
-      return res.status(409).json({
-        success: false,
-        message: 'Version conflict detected. Please refresh and try again.',
-        current: campaign,
-        updates: req.body,
-      });
-    }
-
-    // Only allow deletion of draft, pending, or cancelled campaigns
-    if (!['draft', 'pending', 'cancelled'].includes(campaign.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Only draft, pending, or cancelled campaigns can be deleted',
-      });
-    }
-
-    campaign.isDeleted = true;
-    campaign.deletedAt = new Date();
-    campaign.status = 'cancelled';
-    campaign.isActive = false;
-    campaign.__v += 1;
-    campaign.lastModifiedAt = new Date();
-    campaign.lastModifiedBy = req.userId;
-
-    await campaign.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Campaign deleted successfully',
-      data: campaign,
-    });
-
-  } catch (error) {
-    console.error('Delete campaign error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete campaign',
-      error: error.message,
-    });
-  }
-});
+router.delete('/campaigns/:id', authAndRole('charity'), charityController.deleteCampaign);
 
 /**
  * @route GET /api/charity/campaigns/stats
  * @desc Get campaign statistics
  * @access Private (Charity)
  */
-router.get('/campaigns/stats', authMiddleware, async (req, res) => {
-  try {
-    const stats = await Campaign.aggregate([
-      { $match: { charityId: req.userId, isDeleted: false } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          active: {
-            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] },
-          },
-          draft: {
-            $sum: { $cond: [{ $eq: ['$status', 'draft'] }, 1, 0] },
-          },
-          pending: {
-            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
-          },
-          paused: {
-            $sum: { $cond: [{ $eq: ['$status', 'paused'] }, 1, 0] },
-          },
-          completed: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
-          },
-          totalRaised: { $sum: '$raisedAmount' },
-          totalDonors: { $sum: '$stats.donorCount' },
-        },
-      },
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: stats[0] || {
-        total: 0,
-        active: 0,
-        draft: 0,
-        pending: 0,
-        paused: 0,
-        completed: 0,
-        totalRaised: 0,
-        totalDonors: 0,
-      },
-    });
-
-  } catch (error) {
-    console.error('Get campaign stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch campaign stats',
-      error: error.message,
-    });
-  }
-});
+router.get('/campaigns/stats', authAndRole('charity'), charityController.getCampaignStats);
 
 /**
  * @route POST /api/charity/campaigns/resolve-conflict
  * @desc Resolve version conflict
  * @access Private (Charity)
  */
-router.post('/campaigns/resolve-conflict', authMiddleware, async (req, res) => {
+router.post('/campaigns/resolve-conflict', authAndRole('charity'), charityController.resolveConflict);
+// routes/charityRoutes.js
+
+/**
+ * @route GET /api/charity/dashboard/stats
+ * @desc Get charity dashboard statistics
+ * @access Private (Charity only)
+ */
+router.get("/dashboard/stats", authAndRole('charity'), charityController.getDashboardStats);
+// routes/charityRoutes.js
+
+/**
+ * @route GET /api/charity/donations
+ * @desc Get all donations for a charity with pagination and filters
+ * @access Private (Charity only)
+ */
+router.get('/donations', authAndRole('charity'), donationController.getCharityDonations);
+
+/**
+ * @route GET /api/charity/donations/:id
+ * @desc Get single donation details
+ * @access Private (Charity only)
+ */
+router.get('/donations/:id', authAndRole('charity'), donationController.getDonationDetails);
+
+/**
+ * @route GET /api/charity/donations/export/pdf
+ * @desc Export donations as PDF
+ * @access Private (Charity only)
+ */
+router.get('/donations/export/pdf', authAndRole('charity'), async (req, res) => {
   try {
-    const { documentId, strategy, currentVersion, userChanges } = req.body;
+    const charityId = req.userId;
+    const { status, startDate, endDate } = req.query;
 
-    if (!documentId || !strategy) {
-      return res.status(400).json({
-        success: false,
-        message: 'Document ID and strategy are required',
-      });
-    }
+    const query = { charityId };
+    if (status && status !== 'all') query.status = status;
+    if (startDate) query.donationDate = { ...query.donationDate, $gte: new Date(startDate) };
+    if (endDate) query.donationDate = { ...query.donationDate, $lte: new Date(endDate) };
 
-    const campaign = await Campaign.findOne({
-      _id: documentId,
-      charityId: req.userId,
-    });
+    const donations = await Donation.find(query)
+      .populate('donorId', 'fullName email')
+      .populate('campaignId', 'title')
+      .sort({ donationDate: -1 })
+      .lean();
 
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campaign not found',
-      });
-    }
-
-    let resolvedData;
-
-    switch (strategy) {
-      case 'latest':
-        // Use latest version from server
-        resolvedData = campaign;
-        break;
-
-      case 'merge':
-        // Merge user changes with current
-        resolvedData = { ...campaign.toObject(), ...userChanges };
-        resolvedData.__v = campaign.__v + 1;
-        resolvedData.lastModifiedAt = new Date();
-        resolvedData.lastModifiedBy = req.userId;
-        break;
-
-      case 'auto':
-      default:
-        // Auto-resolve: keep latest version
-        resolvedData = campaign;
-        break;
-    }
-
-    // Update campaign with resolved data
-    const updated = await Campaign.findByIdAndUpdate(
-      documentId,
-      {
-        ...resolvedData,
-        __v: campaign.__v + 1,
-        lastModifiedAt: new Date(),
-        lastModifiedBy: req.userId,
-      },
-      { new: true }
-    );
-
+    // Generate PDF (using pdfkit or similar)
+    // For now, return JSON data
     res.status(200).json({
       success: true,
-      message: 'Conflict resolved successfully',
-      data: updated,
+      data: donations.map((d) => ({
+        receiptNumber: d.receiptNumber,
+        amount: d.amount,
+        donor: d.isAnonymous ? 'Anonymous' : (d.donorName || d.donorId?.fullName || 'Guest'),
+        campaign: d.campaignId?.title || 'Unknown',
+        status: d.status,
+        date: d.donationDate,
+      })),
     });
-
   } catch (error) {
-    console.error('Resolve conflict error:', error);
+    console.error('Export PDF error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to resolve conflict',
+      message: 'Failed to export PDF',
       error: error.message,
     });
   }
 });
+
+/**
+ * @route GET /api/charity/donations/export/excel
+ * @desc Export donations as Excel
+ * @access Private (Charity only)
+ */
+router.get('/donations/export/excel', authAndRole('charity'), async (req, res) => {
+  try {
+    const charityId = req.userId;
+    const { status, startDate, endDate } = req.query;
+
+    const query = { charityId };
+    if (status && status !== 'all') query.status = status;
+    if (startDate) query.donationDate = { ...query.donationDate, $gte: new Date(startDate) };
+    if (endDate) query.donationDate = { ...query.donationDate, $lte: new Date(endDate) };
+
+    const donations = await Donation.find(query)
+      .populate('donorId', 'fullName email')
+      .populate('campaignId', 'title')
+      .sort({ donationDate: -1 })
+      .lean();
+
+    // Generate Excel (using exceljs or similar)
+    // For now, return JSON data
+    res.status(200).json({
+      success: true,
+      data: donations.map((d) => ({
+        'Receipt Number': d.receiptNumber,
+        'Amount': d.amount,
+        'Currency': d.currency || 'INR',
+        'Donor': d.isAnonymous ? 'Anonymous' : (d.donorName || d.donorId?.fullName || 'Guest'),
+        'Campaign': d.campaignId?.title || 'Unknown',
+        'Status': d.status,
+        'Payment Method': d.paymentMethod,
+        'Date': d.donationDate,
+        'Transaction ID': d.transactionId,
+        'Message': d.message || '',
+      })),
+    });
+  } catch (error) {
+     console.error('Export Excel error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export Excel',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @route GET /api/charity/donations/stats
+ * @desc Get donation statistics for charity dashboard
+ * @access Private (Charity only)
+ */
+router.get('/donations/stats', authAndRole('charity'), async (req, res) => {
+  try {
+    const charityId = req.userId;
+
+    // Get overall stats
+    const overallStats = await Donation.aggregate([
+      { $match: { charityId } },
+      {
+        $group: {
+          _id: null,
+          totalDonations: { $sum: 1 },
+          totalAmount: { $sum: '$amount' },
+          completedDonations: {
+            $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] },
+          },
+          completedAmount: {
+            $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, '$amount', 0] },
+          },
+          pendingDonations: {
+            $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] },
+          },
+          failedDonations: {
+            $sum: { $cond: [{ $eq: ['$status', 'Failed'] }, 1, 0] },
+          },
+          refundedDonations: {
+            $sum: { $cond: [{ $eq: ['$status', 'Refunded'] }, 1, 0] },
+          },
+          uniqueDonors: { $addToSet: '$donorId' },
+        },
+      },
+    ]);
+
+    // Get daily stats for the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const dailyStats = await Donation.aggregate([
+      {
+        $match: {
+          charityId,
+          donationDate: { $gte: sevenDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$donationDate' },
+            month: { $month: '$donationDate' },
+            day: { $dayOfMonth: '$donationDate' },
+          },
+          amount: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        overall: overallStats[0] || {
+          totalDonations: 0,
+          totalAmount: 0,
+          completedDonations: 0,
+          completedAmount: 0,
+          pendingDonations: 0,
+          failedDonations: 0,
+          refundedDonations: 0,
+          uniqueDonors: [],
+        },
+        daily: dailyStats.map((item) => ({
+          date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
+          amount: item.amount,
+          count: item.count,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Get donation stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch donation stats',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @route PUT /api/charity/donations/:id/refund
+ * @desc Refund a donation
+ * @access Private (Charity only)
+ */
+router.put('/donations/:id/refund', authAndRole('charity'), donationController.refundDonation);
+
+/**
+ * @route GET /api/charity/profile
+ * @desc Get charity profile
+ * @access Private (Charity only)
+ */
+router.get('/profile', authAndRole('charity'), charityController.getProfile);
+
+
+/**
+ * @route PUT /api/charity/profile
+ * @desc Update charity profile
+ * @access Private (Charity only)
+ */
+router.put('/profile', authAndRole('charity'), charityController.updateProfile);
 
 module.exports = router;

@@ -58,7 +58,7 @@ router.get("/dashboard/stats", authMiddleware, isAdmin, async (req, res) => {
             userGrowth
         ] = await Promise.all([
             // Total Users
-            User.countDocuments({ isDeleted: false }),
+            User.countDocuments({ isDeleted: false, role: 'donor' }),
             
             // Total Charities
             User.countDocuments({ role: 'charity', isDeleted: false }),

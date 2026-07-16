@@ -56,8 +56,7 @@ const transporter = createTransporter();
 /**
  * Universal Send Email Wrapper Function
  */
-const sendEmail = async ({ to, subject, text, html }) => {
-  // If transporter failed to initialize or isn't set up, mock success for development
+const sendEmail = async ({ to, subject, text,   html }) => {
   if (!transporter) {
     console.warn(`🛑 Skipping email send to <${to}> because email credentials are missing in .env.`);
     return { messageId: "mock-development-id", skipped: true };
@@ -65,21 +64,20 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `CharityConnect <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      text,
       html,
     };
 
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error(`❌ Email send error executing sendMail:`, error);
+    console.error(`❌ Email send error executing sendMail:`, error.message);
     logger.error(`Email send error executing sendMail:`, error);
     throw error;
   }
 };
 
-// Export the function instead of the raw, fragile instance object
+
 module.exports = { sendEmail };

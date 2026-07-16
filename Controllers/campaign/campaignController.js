@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
 const Campaign = require("../../models/CampaignModel");
 const User = require("../../models/User");
-const { deleteFile } = require("../../config/multerConfig");
+const { deleteFile, getFileUrl } = require("../../config/multerConfig");
 const { sendEmail } = require("../../config/mailConfig");
 const Donation = require("../../models/Donation");
+const { checkEligibility } = require("../../services/verificationService");
 
 // ==================== CREATE CAMPAIGN ====================
 
@@ -27,11 +28,14 @@ exports.createCampaign = async (req, res) => {
             address,
         } = req.body;
 
+    const charityId = req.userId;
+
+    const uploadedFiles = req.files?.campaignImages || [];
+
         // Validate required fields
         if (!title || !category || !description || !goalAmount || !endDate) {
             // Clean up uploaded files if validation fails
-            if (req.files?.coverImage) deleteFile(req.files.coverImage[0].path);
-            if (req.files?.campaignImages) req.files.campaignImages.forEach(f => deleteFile(f.path));
+            if (uploadedFiles.length > 0) uploadedFiles.forEach(f => deleteFile(f.path));
 
             return res.status(400).json({
                 success: false,
@@ -42,8 +46,7 @@ exports.createCampaign = async (req, res) => {
         // Check if user is a charity
         const user = await User.findById(req.userId);
         if (!user || user.role !== "charity") {
-            if (req.files?.coverImage) deleteFile(req.files.coverImage[0].path);
-            if (req.files?.campaignImages) req.files.campaignImages.forEach(f => deleteFile(f.path));
+            if (uploadedFiles.length > 0) uploadedFiles.forEach(f => deleteFile(f.path));
             return res.status(403).json({
                 success: false,
                 message: "Only charities can create campaigns"
@@ -52,14 +55,40 @@ exports.createCampaign = async (req, res) => {
 
         // Check if charity is approved
         if (!user.isApproved) {
-            if (req.files?.coverImage) deleteFile(req.files.coverImage[0].path);
-            if (req.files?.campaignImages) req.files.campaignImages.forEach(f => deleteFile(f.path));
+            if (uploadedFiles.length > 0) uploadedFiles.forEach(f => deleteFile(f.path));
             return res.status(403).json({
                 success: false,
                 message: "Your charity account must be approved before creating campaigns"
             });
         }
 
+
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your charity is not verified yet. Please complete document verification.',
+        data: {
+          status: 'pending_verification',
+          action: 'Complete document verification',
+          redirect: '/charity/documents',
+        },
+      });
+    }
+
+    const eligibility = await checkEligibility(charityId);
+    if (!eligibility.isEligible) {
+      return res.status(403).json({
+        success: false,
+        message: eligibility.reason || 'Your charity is not eligible for fundraising yet.',
+        data: {
+          status: 'not_eligible',
+          missingDocs: eligibility.missingDocs,
+          progress: eligibility.progress,
+          action: 'Complete verification requirements',
+          redirect: '/charity/documents',
+        },
+      });
+    }
         // Parse address if provided as JSON string
         let parsedAddress = {};
         if (address) {
@@ -75,8 +104,8 @@ exports.createCampaign = async (req, res) => {
             : (req.files?.campaignImages || []);
 
         // 3. Extract the first one as cover, and the remaining ones as gallery
-        const coverImage = filesArray.length > 0 ? filesArray[0].path : null;
-        const campaignImages = filesArray.length > 1 ? filesArray.slice(1).map(f => f.path) : [];
+        const coverImage = filesArray.length > 0 ? getFileUrl(req, filesArray[0].path) : null;
+        const campaignImages = filesArray.length > 1 ? filesArray.slice(1).map(f => getFileUrl(req, f.path)) : [];
 
         // 4. Validation & cleanup fallback
         if (!coverImage) {
@@ -411,13 +440,13 @@ exports.updateCampaign = async (req, res) => {
             if (campaign.coverImage) {
                 deleteFile(campaign.coverImage);
             }
-            campaign.coverImage = req.files.coverImage[0].path;
+            campaign.coverImage = getFileUrl(req, req.files.coverImage[0].path);
         }
 
         if (req.files?.campaignImages) {
             // Delete old images
             campaign.campaignImages.forEach(img => deleteFile(img));
-            campaign.campaignImages = req.files.campaignImages.map(f => f.path);
+            campaign.campaignImages = req.files.campaignImages.map(f => getFileUrl(req, f.path));
         }
 
         // Reset status to pending if major changes

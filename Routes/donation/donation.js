@@ -1,4 +1,3 @@
-// routes/donationRoutes.js
 const express = require('express');
 const router = express.Router();
 const { authMiddleware, authAndRole } = require('../../middlewares/auth');
@@ -7,8 +6,8 @@ const rateLimit = require('express-rate-limit');
 
 
 const donationLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 donations per minute
+  windowMs: 60 * 1000,
+  max: 10,
   message: {
     success: false,
     message: 'Too many donation requests. Please try later.',

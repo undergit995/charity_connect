@@ -1,6 +1,6 @@
 const { default: mongoose } = require("mongoose");
 
-// Charity Details Schema
+
 const CharityDetailsSchema = new mongoose.Schema({
   organizationName: {
     type: String,

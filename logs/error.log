@@ -1,0 +1,10 @@
+[2026-07-13T03:11:47.202Z] [ERROR] Error creating OTP:
+Meta: Please wait 60 seconds before requesting a new OTP
+[2026-07-14T08:39:04.055Z] [ERROR] Email transporter verification failed:
+Error: getaddrinfo ENOTFOUND smtp.gmail.com
+Stack: Error: getaddrinfo ENOTFOUND smtp.gmail.com
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+[2026-07-16T09:49:14.674Z] [ERROR] Email transporter verification failed:
+Error: getaddrinfo ENOTFOUND smtp.gmail.com
+Stack: Error: getaddrinfo ENOTFOUND smtp.gmail.com
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)

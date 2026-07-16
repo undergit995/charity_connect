@@ -244,7 +244,7 @@ exports.approveCampaign = async (req, res) => {
                 subject: `Campaign "${campaign.title}" Approved! 🎉`,
                 html: `                    
                     <h2>Campaign Approved!</h2>
-                    <p>Dear ${charityId.fullName},</p>
+                    <p>Dear ${campaign.charityId.fullName},</p>
                     <p>Your campaign "<strong>${campaign.title}</strong>" has been approved and is now live!</p>
                     <p>You can start receiving donations immediately.</p>
                     <p>Share your campaign link with your network:</p>

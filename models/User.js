@@ -144,7 +144,11 @@ const UserSchema = new mongoose.Schema(
     },
     verificationTokenExpires: {
       type: Date,
-    },
+    }, 
+    verificationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Verification',
+  },
 
     // Password Reset
     resetPasswordToken: {
@@ -171,7 +175,7 @@ const UserSchema = new mongoose.Schema(
     // Preferences
     preferredCurrency: {
       type: String,
-      default: 'USD',
+      default: 'INR',
     },
     preferredLanguage: {
       type: String,

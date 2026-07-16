@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { authAndRole } = require('../../middlewares/auth');
+const { authAndRole, optionalAuth } = require('../../middlewares/auth');
 const paymentController = require('../../Controllers/payment/paymentController');
 
 /**
  * @route POST /api/payments/create-order
  * @desc Create Razorpay order
- * @access Private
+ * @access Public (with optional auth)
  */
-router.post('/create-order', paymentController.createOrder);
+router.post('/create-order', optionalAuth, paymentController.createOrder);
 
 /**
  * @route POST /api/payments/verify
