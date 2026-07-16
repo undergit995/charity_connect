@@ -358,18 +358,20 @@ SettingsSchema.methods.deepMerge = function(target, source) {
  * @param {string} key - Dot notation key (e.g., 'contact.email')
  * @returns {*} - Setting value
  */
-SettingsSchema.methods.get = function(key) {
-  const keys = key.split('.');
+SettingsSchema.methods.getSettings = function (key) {
+  const keys = key.split(".");
   let value = this.data;
+
   for (const k of keys) {
-    if (value && typeof value === 'object') {
+    if (value && typeof value === "object") {
       value = value[k];
     } else {
       return undefined;
     }
   }
+
   return value;
-};
+};                             
 
 /**
  * Set a specific setting value

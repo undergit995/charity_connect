@@ -7,7 +7,13 @@ const corsOptions = require("./config/corsConfig.js");
 const { connectDB, gracefulShutdown } = require("./config/connectDb.js");
 const auth = require("./Routes/auth/auth.js")
     // const { globalErrorHandler } = require('./utils/errorHandler');
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
 
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
 const app = express();
 
 // CORS configuration
