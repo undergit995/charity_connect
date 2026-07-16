@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { authAndRole, authMiddleware } = require("../../middlewares/auth");
-const { uploadCampaignMedia } = require("../../config/multerConfig");
-const campaignController = require("../../Controllers/campaign/campaignController");
+const { authAndRole, authMiddleware } = require("../../middlewares/auth.js");
+const { uploadCampaignMedia } = require("../../config/multerConfig.js");
+const campaignController = require("../../Controllers/campaign/campaignController.js");
 
 // ==================== CREATE CAMPAIGN ====================
 

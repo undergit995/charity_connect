@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authAndRole, optionalAuth } = require('../../middlewares/auth');
-const paymentController = require('../../Controllers/payment/paymentController');
+const { authAndRole, optionalAuth } = require('../../middlewares/auth.js');
+const paymentController = require('../../Controllers/payment/paymentController.js');
 
 /**
  * @route POST /api/payments/create-order

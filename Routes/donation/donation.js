@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware, authAndRole } = require('../../middlewares/auth');
-const donationController = require('../../Controllers/donation/donationController');
+const { authMiddleware, authAndRole } = require('../../middlewares/auth.js');
+const donationController = require('../../Controllers/donation/donationController.js');
 const rateLimit = require('express-rate-limit');
 
 
