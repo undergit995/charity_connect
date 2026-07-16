@@ -183,7 +183,7 @@ exports.getDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Donor dashboard stats error:", error);
+    //console.error("Donor dashboard stats error:", error);
     res
       .status(500)
       .json({
@@ -240,7 +240,7 @@ exports.getDonations = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get donor donations error:", error);
+    //console.error("Get donor donations error:", error);
     res
       .status(500)
       .json({
@@ -273,7 +273,7 @@ exports.getDonationReceipt = async (req, res) => {
     }
     res.status(200).json({ success: true, data: donation });
   } catch (error) {
-    console.error("Get donation receipt error:", error);
+    //console.error("Get donation receipt error:", error);
     res
       .status(500)
       .json({
@@ -304,7 +304,7 @@ exports.getSavedCampaigns = async (req, res) => {
     }
     res.status(200).json({ success: true, data: user.savedCampaigns || [] });
   } catch (error) {
-    console.error("Get saved campaigns error:", error);
+    //console.error("Get saved campaigns error:", error);
     res
       .status(500)
       .json({
@@ -367,7 +367,7 @@ exports.toggleSaveCampaign = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Save campaign error:", error);
+    //console.error("Save campaign error:", error);
     res
       .status(500)
       .json({
@@ -406,7 +406,7 @@ exports.getProfile = async (req, res) => {
       data: { donor, donationSummary: donationSummary[0] || {} },
     });
   } catch (error) {
-    console.error("Get donor profile error:", error);
+    //console.error("Get donor profile error:", error);
     res
       .status(500)
       .json({
@@ -480,12 +480,12 @@ exports.updateProfile = async (req, res) => {
       donor.notificationPreferences = typeof notificationPreferences === 'string' ? JSON.parse(notificationPreferences) : notificationPreferences;
     }
 
-    // Handle file upload
     if (req.file) {
       donor.profileImage = getFileUrl(req, req.file.path);
     }
 
     await donor.save();
+    
     const updatedDonor = donor.toObject();
     delete updatedDonor.password;
 
@@ -497,7 +497,7 @@ exports.updateProfile = async (req, res) => {
         data: { user: updatedDonor },
       });
   } catch (error) {
-    console.error("Update donor profile error:", error);
+    //console.error("Update donor profile error:", error);
     res
       .status(500)
       .json({
@@ -559,7 +559,7 @@ exports.getImpact = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get donor impact error:", error);
+    //console.error("Get donor impact error:", error);
     res
       .status(500)
       .json({

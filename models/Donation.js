@@ -383,7 +383,7 @@ donationSchema.pre("save", async function() {
     
     
   } catch (error) {
-    console.log(error);
+    //console.log(error);
   }
 });
 

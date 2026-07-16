@@ -32,7 +32,7 @@ exports.processDonation = async (req, res) => {
             data: result,
         });
     } catch (error) {
-        console.error('Donation error:', error);
+        //console.error('Donation error:', error);
         res.status(400).json({
             success: false,
             message: error.message || 'Donation failed',
@@ -68,7 +68,7 @@ exports.queueDonation = async (req, res) => {
             data: result,
         });
     } catch (error) {
-        console.error('Queue donation error:', error);
+        //console.error('Queue donation error:', error);
         res.status(400).json({
             success: false,
             message: error.message || 'Failed to queue donation',
@@ -107,7 +107,7 @@ exports.processBulkDonations = async (req, res) => {
             data: results,
         });
     } catch (error) {
-        console.error('Bulk donation error:', error);
+        //console.error('Bulk donation error:', error);
         res.status(400).json({
             success: false,
             message: error.message || 'Bulk donation failed',
@@ -129,7 +129,7 @@ exports.getCampaignDonationStats = async (req, res) => {
             data: stats,
         });
     } catch (error) {
-        console.error('Get donation stats error:', error);
+        //console.error('Get donation stats error:', error);
         res.status(400).json({
             success: false,
             message: error.message || 'Failed to get donation stats',
@@ -151,7 +151,7 @@ exports.getRealTimeDonationStatus = async (req, res) => {
             data: status,
         });
     } catch (error) {
-        console.error('Get donation status error:', error);
+        //console.error('Get donation status error:', error);
         res.status(400).json({
             success: false,
             message: error.message || 'Failed to get donation status',
@@ -189,7 +189,7 @@ exports.handleDonationWebhook = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Webhook received' });
     } catch (error) {
-        console.error('Webhook error:', error);
+        //console.error('Webhook error:', error);
         res.status(500).json({
             success: false,
             message: 'Webhook processing failed',
@@ -244,7 +244,7 @@ exports.getCampaignForDonation = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get donation page error:', error);
+        //console.error('Get donation page error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to load donation page',
@@ -289,7 +289,7 @@ exports.getDonationReceipt = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get receipt error:', error);
+        //console.error('Get receipt error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch receipt',

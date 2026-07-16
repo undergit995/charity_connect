@@ -7,7 +7,7 @@ const isEmailConfigured = () => {
   const emailPass = process.env.EMAIL_PASS;
   
   if (!emailUser || !emailPass) {
-    console.warn('⚠️ Email credentials not configured. Email sending will be disabled.');
+    //console.warn('⚠️ Email credentials not configured. Email sending will be disabled.');
     return false;
   }
   return true;
@@ -37,14 +37,14 @@ const createTransporter = () => {
     // Verify connection asynchronously once during bootup
     instance.verify((error) => {
       if (error) {
-        console.error('❌ Email transporter verification failed:', error);
+        //console.error('❌ Email transporter verification failed:', error);
         logger.error('Email transporter verification failed:', error);
       }
     });
 
     return instance;
   } catch (error) {
-    console.error('❌ Failed to create email transporter:', error);
+    //console.error('❌ Failed to create email transporter:', error);
     logger.error('Failed to create email transporter:', error);
     return null;
   }
@@ -58,7 +58,7 @@ const transporter = createTransporter();
  */
 const sendEmail = async ({ to, subject, text,   html }) => {
   if (!transporter) {
-    console.warn(`🛑 Skipping email send to <${to}> because email credentials are missing in .env.`);
+    //console.warn(`🛑 Skipping email send to <${to}> because email credentials are missing in .env.`);
     return { messageId: "mock-development-id", skipped: true };
   }
 
@@ -73,7 +73,7 @@ const sendEmail = async ({ to, subject, text,   html }) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error(`❌ Email send error executing sendMail:`, error.message);
+    //console.error(`❌ Email send error executing sendMail:`, error.message);
     logger.error(`Email send error executing sendMail:`, error);
     throw error;
   }

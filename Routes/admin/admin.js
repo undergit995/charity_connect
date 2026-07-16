@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Verification = require('../../models/Verification');
-const ActivityLog = require('../../models/ActivityLog');
-const { sendEmail } = require('../../utils/emailService');
-const adminController = require("../../Controllers/admin/adminController");
-const { upload } = require('../../config/multerConfig');
-const campaignController = require("../../Controllers/admin/campaignController");
-const { authAndRole } = require("../../middlewares/auth");
-const { getDashboardStats } = require("../../Controllers/admin/dashboardStats");
+const User = require('../../models/User.js');
+const Verification = require('../../models/Verification.js');
+const ActivityLog = require('../../models/ActivityLog.js');
+const { sendEmail } = require('../../utils/emailService.js');
+const adminController = require("../../Controllers/admin/adminController.js");
+const { upload } = require('../../config/multerConfig.js');
+const campaignController = require("../../Controllers/admin/campaignController.js");
+const { authAndRole } = require("../../middlewares/auth.js");
+const { getDashboardStats } = require("../../Controllers/admin/dashboardStats.js");
 
 // ==================== CHARITY MANAGEMENT ====================
 
@@ -118,7 +118,7 @@ router.put('/charities/:id/approve', authAndRole('admin'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Approve charity error:', error);
+    //console.error('Approve charity error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to approve charity',
@@ -212,7 +212,7 @@ router.put('/charities/:id/reject', authAndRole('admin'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Reject charity error:', error);
+    //console.error('Reject charity error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to reject charity',
@@ -276,7 +276,7 @@ const sendApprovalEmail = async (charity) => {
     });
 
   } catch (error) {
-    console.error('Send approval email error:', error);
+    //console.error('Send approval email error:', error);
   }
 };
 
@@ -336,7 +336,7 @@ const sendRejectionEmail = async (charity, reason) => {
     });
 
   } catch (error) {
-    console.error('Send rejection email error:', error);
+    //console.error('Send rejection email error:', error);
   }
 };
 /**
@@ -433,7 +433,7 @@ router.get("/public-stats", adminController.getPublicStats);
  * @desc Get public information like footer, contact etc.
  * @access Public
  */
-router.use('/info', require('./settings'));
+router.use('/info', require('./settings.js'));
 
 /**
  * @route PUT /api/admin/profile

@@ -200,7 +200,7 @@ exports.getCharityDonations = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get charity donations error:', error);
+    //console.error('Get charity donations error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch donations',
@@ -276,7 +276,7 @@ exports.getDonationDetails = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get donation details error:', error);
+    //console.error('Get donation details error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch donation details',
@@ -343,7 +343,7 @@ exports.refundDonation = async (req, res) => {
       data: donation,
     });
   } catch (error) {
-    console.error('Refund donation error:', error);
+    //console.error('Refund donation error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to refund donation',

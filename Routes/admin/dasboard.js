@@ -1,4 +1,3 @@
-// routes/adminRoutes.js
 
 /**
  * @route GET /api/admin/dashboard/stats
@@ -159,7 +158,7 @@ router.get("/dashboard/stats", authMiddleware, isAdmin, async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Admin dashboard stats error:", error);
+        //console.error("Admin dashboard stats error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch dashboard stats",

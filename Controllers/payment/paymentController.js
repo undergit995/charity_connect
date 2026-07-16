@@ -90,7 +90,7 @@ exports.createOrder = async (req, res) => {
     });
 
     await donation.save();
-    console.log(donation);
+    //console.log(donation);
 
     res.status(200).json({
       success: true,
@@ -103,7 +103,7 @@ exports.createOrder = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create order error:", error);
+    //console.error("Create order error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create payment order",
@@ -264,7 +264,7 @@ exports.verifyPayment = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Verify payment error:", error);
+    //console.error("Verify payment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to verify payment",
@@ -340,7 +340,7 @@ exports.handleWebhook = async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    //console.error("Webhook error:", error);
     res.status(500).json({
       success: false,
       message: "Webhook processing failed",

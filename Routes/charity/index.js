@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { authAndRole } = require('../../middlewares/auth');
-const charityController = require('../../Controllers/charity/charityController');
-const donationController = require('../../Controllers/charity/donationController');
+const { authAndRole } = require('../../middlewares/auth.js');
+const charityController = require('../../Controllers/charity/charityController.js');
+const donationController = require('../../Controllers/charity/donationController.js');
 const { formatDistanceToNow } = require('date-fns');
-const User = require('../../models/User');
-const Donation = require('../../models/Donation');
-const { upload } = require('../../config/multerConfig');
-const Campaign = require('../../models/CampaignModel');
+const User = require('../../models/User.js');
+const Donation = require('../../models/Donation.js');
+const { upload } = require('../../config/multerConfig.js');
+const Campaign = require('../../models/CampaignModel.js');
 const mongoose = require('mongoose');
 
 
@@ -142,7 +142,7 @@ router.get('/donations/export/pdf', authAndRole('charity'), async (req, res) => 
       })),
     });
   } catch (error) {
-    console.error('Export PDF error:', error);
+    //console.error('Export PDF error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to export PDF',
@@ -190,7 +190,7 @@ router.get('/donations/export/excel', authAndRole('charity'), async (req, res) =
       })),
     });
   } catch (error) {
-     console.error('Export Excel error:', error);
+     //console.error('Export Excel error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to export Excel',
@@ -282,7 +282,7 @@ router.get('/donations/stats', authAndRole('charity'), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get donation stats error:', error);
+    //console.error('Get donation stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch donation stats',
@@ -303,6 +303,6 @@ router.put('/donations/:id/refund', authAndRole('charity'), donationController.r
  * @desc Update charity profile
  * @access Private (Charity only)
  */
-router.put('/profile', authAndRole('charity'), upload.single('profileImage'), charityController.updateProfile);
+router.put('/profile', authAndRole('charity'),  upload.fields([{ name: 'profileImage', maxCount: 1 }, { name: 'coverImage', maxCount: 1 }]), charityController.updateProfile);
 
 module.exports = router;

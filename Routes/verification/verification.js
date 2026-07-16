@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const {authAndRole} = require('../../middlewares/auth');
-const {uploadDocument} = require('../../config/multerConfig');
-const User = require('../../models/User');
-const Verification = require('../../models/Verification');
-const { checkEligibility, DOCUMENT_REQUIREMENTS } = require('../../services/verificationService');
+const {authAndRole} = require('../../middlewares/auth.js');
+const {uploadDocument} = require('../../config/multerConfig.js');
+const User = require('../../models/User.js');
+const Verification = require('../../models/Verification.js');
+const { checkEligibility, DOCUMENT_REQUIREMENTS } = require('../../services/verificationService.js');
 
 /**
  * @route GET /api/verification/status/:charityId
@@ -78,7 +78,7 @@ router.get('/status/:charityId', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get verification status error:', error);
+    //console.error('Get verification status error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get verification status',
@@ -233,7 +233,7 @@ router.get('/pending', authAndRole('admin'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get pending verifications error:', error);
+    //console.error('Get pending verifications error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending verifications',
@@ -306,7 +306,7 @@ router.put('/documents/:charityId/fraud_review', authAndRole('admin'), async (re
       data: verification,
     });
   } catch (error) {
-    console.error('Update fraud review error:', error);
+    //console.error('Update fraud review error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update fraud review',
@@ -343,7 +343,7 @@ router.get('/eligibility/:charityId', async (req, res) => {
       data: eligibility,
     });
   } catch (error) {
-    console.error('Eligibility check error:', error);
+    //console.error('Eligibility check error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to check eligibility',
@@ -418,7 +418,7 @@ router.post('/upload/:charityId', authAndRole('charity'), uploadDocument, async 
       },
     });
   } catch (error) {
-    console.error('Upload document error:', error);
+    //console.error('Upload document error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to upload document',
@@ -498,7 +498,7 @@ router.put('/documents/:charityId/:documentId', authAndRole('admin'), async (req
       },
     });
   } catch (error) {
-    console.error('Verify document error:', error);
+    //console.error('Verify document error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to verify document',
@@ -555,7 +555,7 @@ router.put('/documents/:charityId/verify-all', authAndRole('admin'), async (req,
       message: 'All documents verified successfully',
     });
   } catch (error) {
-    console.error('Verify all documents error:', error);
+    //console.error('Verify all documents error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to verify all documents',
@@ -622,7 +622,7 @@ router.get('/documents/:charityId/:documentId/view', authAndRole('admin'), async
       },
     });
   } catch (error) {
-    console.error('View document error:', error);
+    //console.error('View document error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to view document',
@@ -685,7 +685,7 @@ router.get('/documents/:charityId/:documentId', authAndRole('admin'), async (req
       },
     });
   } catch (error) {
-    console.error('View document error:', error);
+    //console.error('View document error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to view document',
@@ -735,7 +735,7 @@ router.post('/submit/:charityId', authAndRole('charity'), async (req, res) => {
       message: 'Application submitted for verification',
     });
   } catch (error) {
-    console.error('Submit verification error:', error);
+    //console.error('Submit verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to submit verification',

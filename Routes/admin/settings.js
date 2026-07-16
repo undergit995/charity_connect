@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { authAndRole } = require('../../middlewares/auth');
-const Settings = require('../../models/Settings');
-const User = require('../../models/User');
+const { authAndRole } = require('../../middlewares/auth.js');
+const Settings = require('../../models/Settings.js');
+const User = require('../../models/User.js');
 
 /**
  * @route GET /api/settings/footer
@@ -65,7 +65,7 @@ router.get('/footer', async (req, res) => {
         data: settings.data,
       });
     }
-    console.error('Get footer settings error:', error);
+    //console.error('Get footer settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch footer settings',
@@ -108,7 +108,7 @@ router.get('/:type', async (req, res) => {
       updatedAt: settings.updatedAt,
     });
   } catch (error) {
-    console.error('Get settings error:', error);
+    //console.error('Get settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch settings',
@@ -152,7 +152,7 @@ router.put('/:type', authAndRole('admin'), async (req, res) => {
       version: settings.version,
     });
   } catch (error) {
-    console.error('Update settings error:', error);
+    //console.error('Update settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update settings',
@@ -196,7 +196,7 @@ router.put('/:type/:key', authAndRole('admin'), async (req, res) => {
       data: settings.data,
     });
   } catch (error) {
-    console.error('Update setting error:', error);
+    //console.error('Update setting error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update setting',
@@ -242,7 +242,7 @@ router.post('/:type/reset', authAndRole('admin'), async (req, res) => {
       data: settings.data,
     });
   } catch (error) {
-    console.error('Reset settings error:', error);
+    //console.error('Reset settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to reset settings',
@@ -294,7 +294,7 @@ router.put('/footer', authAndRole('admin'), async (req, res) => {
       data: settings.data,
     });
   } catch (error) {
-    console.error('Update footer settings error:', error);
+    //console.error('Update footer settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update footer settings',

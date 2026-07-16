@@ -117,7 +117,7 @@ const createVerificationRecord = async (charityId) => {
     return verification;
 
   } catch (error) {
-    console.error('Create verification record error:', error);
+    //console.error('Create verification record error:', error);
     throw error;
   }
 };
@@ -131,7 +131,7 @@ const createVerificationRecord = async (charityId) => {
 const checkEligibility = async (charityId) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(charityId)) {
-      console.error(`Invalid charityId passed to checkEligibility: ${charityId}`);
+      //console.error(`Invalid charityId passed to checkEligibility: ${charityId}`);
       return {
         isEligible: false,
         reason: 'Invalid Charity ID provided.',
@@ -227,7 +227,7 @@ const checkEligibility = async (charityId) => {
     };
 
   } catch (error) {
-    console.error('Check eligibility error:', error);
+    //console.error('Check eligibility error:', error);
     return {
       isEligible: false,
       reason: 'Failed to check eligibility. Please try again.',

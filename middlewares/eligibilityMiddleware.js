@@ -18,7 +18,7 @@ const ensureVerificationRecord = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    console.error('Ensure verification record error:', error);
+    //console.error('Ensure verification record error:', error);
     next();
   }
 };
@@ -77,7 +77,7 @@ const checkCharityEligibility = async (req, res, next) => {
     req.charity = charity;
     next();
   } catch (error) {
-    console.error('Eligibility check middleware error:', error);
+    //console.error('Eligibility check middleware error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to check eligibility',

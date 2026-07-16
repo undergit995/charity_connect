@@ -200,7 +200,7 @@ router.post('/', contactLimiter, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Contact form error:', error);
+    //console.error('Contact form error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to send message. Please try again.',
@@ -283,7 +283,7 @@ router.get('/', authMiddleware, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get contacts error:', error);
+    //console.error('Get contacts error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch contacts',
@@ -335,7 +335,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
       data: contact,
     });
   } catch (error) {
-    console.error('Get contact error:', error);
+    //console.error('Get contact error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch contact',
@@ -396,7 +396,7 @@ router.put('/:id/status', authMiddleware, async (req, res) => {
       data: contact,
     });
   } catch (error) {
-    console.error('Update contact status error:', error);
+    //console.error('Update contact status error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update contact status',
@@ -444,7 +444,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       message: 'Contact deleted successfully',
     });
   } catch (error) {
-    console.error('Delete contact error:', error);
+    //console.error('Delete contact error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete contact',

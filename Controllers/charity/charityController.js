@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
-const Campaign = require("../../models/CampaignModel");
-const Donation = require("../../models/Donation");
-const { getFileUrl } = require("../../config/multerConfig");
-const User = require("../../models/User");
-const ActivityLog = require("../../models/ActivityLog");
-const { sendEmail } = require("../../utils/emailService");
+const Campaign = require("../../models/CampaignModel.js");
+const Donation = require("../../models/Donation.js");
+const { getFileUrl } = require("../../config/multerConfig.js");
+const otpService = require("../../utils/otpService.js");
+const User = require("../../models/User.js");
+const ActivityLog = require("../../models/ActivityLog.js");
+const { sendEmail } = require("../../utils/emailService.js");
 const { formatDistanceToNow } = require("date-fns");
 
 exports.getCharityCampaigns = async (req, res) => {
@@ -81,7 +82,7 @@ exports.getCharityCampaigns = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get charity campaigns error:", error);
+    //console.error("Get charity campaigns error:", error);
     res
       .status(500)
       .json({
@@ -115,7 +116,7 @@ exports.getCampaignById = async (req, res) => {
     }
     res.status(200).json({ success: true, data: campaign });
   } catch (error) {
-    console.error("Get charity campaign error:", error);
+    //console.error("Get charity campaign error:", error);
     res
       .status(500)
       .json({
@@ -189,7 +190,7 @@ exports.submitCampaignForReview = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Submit campaign error:", error);
+    //console.error("Submit campaign error:", error);
     res
       .status(500)
       .json({
@@ -235,7 +236,7 @@ exports.pauseCampaign = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Pause campaign error:", error);
+    //console.error("Pause campaign error:", error);
     res
       .status(500)
       .json({
@@ -281,7 +282,7 @@ exports.resumeCampaign = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Resume campaign error:", error);
+    //console.error("Resume campaign error:", error);
     res
       .status(500)
       .json({
@@ -340,7 +341,7 @@ exports.completeCampaign = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Complete campaign error:", error);
+    //console.error("Complete campaign error:", error);
     res
       .status(500)
       .json({
@@ -385,7 +386,7 @@ exports.cancelRequest = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Cancel request error:", error);
+    //console.error("Cancel request error:", error);
     res
       .status(500)
       .json({
@@ -433,7 +434,7 @@ exports.deleteCampaign = async (req, res) => {
         data: campaign,
       });
   } catch (error) {
-    console.error("Delete campaign error:", error);
+    //console.error("Delete campaign error:", error);
     res
       .status(500)
       .json({
@@ -466,7 +467,7 @@ exports.getCampaignStats = async (req, res) => {
     ]);
     res.status(200).json({ success: true, data: stats[0] || {} });
   } catch (error) {
-    console.error("Get campaign stats error:", error);
+    //console.error("Get campaign stats error:", error);
     res
       .status(500)
       .json({
@@ -527,7 +528,7 @@ exports.resolveConflict = async (req, res) => {
         data: updated,
       });
   } catch (error) {
-    console.error("Resolve conflict error:", error);
+    //console.error("Resolve conflict error:", error);
     res
       .status(500)
       .json({
@@ -707,7 +708,7 @@ exports.getDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Charity dashboard stats error:", error);
+    //console.error("Charity dashboard stats error:", error);
     res
       .status(500)
       .json({
@@ -753,7 +754,7 @@ exports.getProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get charity profile error:', error);
+    //console.error('Get charity profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch charity profile',
@@ -785,14 +786,17 @@ exports.updateProfile = async (req, res) => {
       zipCode,
       bio,
       charityDetails,
+      email,
+      emailChangeToken,
     } = req.body;
 
-    if (req.files && req.files.coverImage) {
-      charity.coverImage = getFileUrl(req, req.files.coverImage[0].path);
-    }
-
-    if (req.file) {
-      charity.profileImage = getFileUrl(req, req.file.path);
+    if (req.files) {
+      if (req.files.profileImage) {
+        charity.profileImage = getFileUrl(req, req.files.profileImage[0].path);
+      }
+      if (req.files.coverImage) {
+        charity.coverImage = getFileUrl(req, req.files.coverImage[0].path);
+      }
     }
 
     if (firstName) charity.firstName = firstName;
@@ -811,6 +815,23 @@ exports.updateProfile = async (req, res) => {
     if (zipCode) charity.address.zipCode = zipCode;
     if (bio) charity.bio = bio;
 
+    // Handle email change
+    if (email && email !== charity.email) {
+      if (!emailChangeToken) {
+        return res.status(400).json({ success: false, message: 'Email change requires verification token.' });
+      }
+      const verificationResult = await otpService.verifyOTP(email, emailChangeToken, 'email-change');
+      if (!verificationResult.success) {
+        return res.status(400).json({ success: false, message: `Email verification failed: ${verificationResult.message}` });
+      }
+      // Check for email uniqueness before updating
+      const existingUser = await User.findOne({ email: email });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'This email address is already in use.' });
+      }
+      charity.email = email;
+    }
+
     if (charityDetails) {
       const parsedDetails = typeof charityDetails === 'string' ? JSON.parse(charityDetails) : charityDetails;
       charity.charityDetails = charity.charityDetails || {};
@@ -827,7 +848,7 @@ exports.updateProfile = async (req, res) => {
       data: { user: updatedCharity },
     });
   } catch (error) {
-    console.error('Update charity profile error:', error);
+    //console.error('Update charity profile error:', error);
     res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
   }
 };

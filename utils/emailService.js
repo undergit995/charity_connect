@@ -564,12 +564,12 @@ const getDefaultTemplate = (data) => {
 // const sendEmail = async (options) => {
 //   // Check if email is configured
 //   if (!sendMail) {
-//     console.warn('⚠️ Email not sent - senMail not configured');
+//     //console.warn('⚠️ Email not sent - senMail not configured');
 //     logger.warn('Email not sent - sendMail not configured');
     
 //     // In development, log the email content instead of sending
 //     if (process.env.NODE_ENV === 'development') {
-//       console.log('📧 [DEV] Email would be sent:', {
+//       //console.log('📧 [DEV] Email would be sent:', {
 //         to: options.to,
 //         subject: options.subject,
 //         html: options.html ? options.html.substring(0, 200) + '...' : undefined,
@@ -599,11 +599,11 @@ const getDefaultTemplate = (data) => {
 //     };
 
 //     const info = await mailConfig.sendMail(mailOptions);
-//     console.log(`✅ Email sent to ${options.to}: ${info.messageId}`);
+//     //console.log(`✅ Email sent to ${options.to}: ${info.messageId}`);
 //     logger.info(`Email sent to ${options.to}: ${info.messageId}`);
 //     return { success: true, messageId: info.messageId };
 //   } catch (error) {
-//     console.error('❌ Email send error:', error);
+//     //console.error('❌ Email send error:', error);
 //     logger.error('Email send error:', error);
 //     throw error;
 //   }

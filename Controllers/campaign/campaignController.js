@@ -150,7 +150,7 @@ exports.createCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Create campaign error:", error);
+        //console.error("Create campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to create campaign",
@@ -262,7 +262,7 @@ exports.getAllCampaigns = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get campaigns error:", error);
+        //console.error("Get campaigns error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaigns",
@@ -310,7 +310,7 @@ exports.getCampaignById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get campaign error:", error);
+        //console.error("Get campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaign",
@@ -351,7 +351,7 @@ exports.getCampaignBySlug = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get campaign by slug error:", error);
+        //console.error("Get campaign by slug error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaign",
@@ -465,7 +465,7 @@ exports.updateCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Update campaign error:", error);
+        //console.error("Update campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to update campaign",
@@ -526,7 +526,7 @@ exports.deleteCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Delete campaign error:", error);
+        //console.error("Delete campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to delete campaign",
@@ -586,7 +586,7 @@ exports.getCharityCampaigns = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get charity campaigns error:", error);
+        //console.error("Get charity campaigns error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch charity campaigns",
@@ -666,7 +666,7 @@ exports.approveCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Approve campaign error:", error);
+        //console.error("Approve campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to approve campaign",
@@ -751,7 +751,7 @@ exports.rejectCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Reject campaign error:", error);
+        //console.error("Reject campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to reject campaign",
@@ -817,7 +817,7 @@ exports.pauseCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Pause campaign error:", error);
+        //console.error("Pause campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to pause campaign",
@@ -883,7 +883,7 @@ exports.resumeCampaign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Resume campaign error:", error);
+        //console.error("Resume campaign error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to resume campaign",
@@ -923,7 +923,7 @@ exports.getCampaignStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get campaign stats error:", error);
+        //console.error("Get campaign stats error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaign stats",
@@ -1011,7 +1011,7 @@ exports.getCampaignForDonation =  async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get donation page error:', error);
+    //console.error('Get donation page error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to load donation page',
@@ -1051,7 +1051,7 @@ exports.getCampaignByDonationLink = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get campaign by donation link error:", error);
+        //console.error("Get campaign by donation link error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch campaign",

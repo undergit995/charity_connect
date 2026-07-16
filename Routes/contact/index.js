@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
       data: { id: contact._id },
     });
   } catch (error) {
-    console.error('Contact error:', error);
+    //console.error('Contact error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to send message',
@@ -123,7 +123,7 @@ router.get('/', authMiddleware.authAndRole('admin'), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get contacts error:', error);
+    //console.error('Get contacts error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch contacts',
@@ -170,7 +170,7 @@ router.put('/:id', authMiddleware.authAndRole('admin'), async (req, res) => {
       data: contact,
     });
   } catch (error) {
-    console.error('Update contact error:', error);
+    //console.error('Update contact error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update contact',
