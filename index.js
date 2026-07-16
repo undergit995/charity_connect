@@ -8,11 +8,15 @@ const { connectDB, gracefulShutdown } = require("./config/connectDb.js");
 const auth = require("./Routes/auth/auth.js")
     // const { globalErrorHandler } = require('./utils/errorHandler');
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
+    console.error("UNCAUGHT EXCEPTION:");
+    console.error(err);
+    process.exit(1);
 });
 
 process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection:", err);
+    console.error("UNHANDLED REJECTION:");
+    console.error(err);
+    process.exit(1);
 });
 const app = express();
 
@@ -80,15 +84,15 @@ const shutdown = async () => {
 };
 
 // Handle various shutdown signals
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-process.on('uncaughtException', (err) => {
-    // console.error('Uncaught Exception:', err);
-    shutdown();
-});
-process.on('unhandledRejection', (err) => {
-    // console.error('Unhandled Rejection:', err);
-    shutdown();
-});
+// process.on('SIGTERM', shutdown);
+// process.on('SIGINT', shutdown);
+// process.on('uncaughtException', (err) => {
+//     // console.error('Uncaught Exception:', err);
+//     shutdown();
+// });
+// process.on('unhandledRejection', (err) => {
+//     // console.error('Unhandled Rejection:', err);
+//     shutdown();
+// });
 
 module.exports = app;
