@@ -58,19 +58,42 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // API routes
 app.use("/api/auth", auth);
+console.log("Loading routes...");
+
+console.log("maintenance");
 app.use("/api/maintenance", require("./Routes/maintenance/index.js"));
+
+console.log("otp");
 app.use("/api/otp", require("./Routes/auth/otpRoute.js"));
+
+console.log("admin");
 app.use("/api/admin", require("./Routes/admin/admin.js"));
+
+console.log("charity");
 app.use("/api/charity", require("./Routes/charity/index.js"));
+
+console.log("donations");
 app.use("/api/donations", require("./Routes/donation/donation.js"));
+
+console.log("campaigns");
 app.use("/api/campaigns", require("./Routes/campaign/campaign.js"));
+
+console.log("payments");
 app.use("/api/payments", require("./Routes/payment/index.js"));
+
+console.log("verification");
 app.use("/api/verification", require("./Routes/verification/verification.js"));
+
+console.log("contact");
 app.use("/api/contact", require("./Routes/contact/index.js"));
+
+console.log("settings");
 app.use("/api/info", require("./Routes/admin/settings.js"));
+
+console.log("donor");
 app.use("/api/donor", require("./Routes/donor/index.js"));
 
-
+console.log("All routes loaded");
 // Global error handler
 // app.use(globalErrorHandler);
 
