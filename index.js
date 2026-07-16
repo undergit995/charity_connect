@@ -18,6 +18,11 @@ process.on("unhandledRejection", (err) => {
     console.error(err);
     process.exit(1);
 });
+console.log({
+  PORT: process.env.PORT,
+  MONGO_URI: !!process.env.MONGO_URI,
+  JWT_SECRET: !!process.env.JWT_SECRET
+});
 const app = express();
 
 // CORS configuration
@@ -68,9 +73,17 @@ app.use("/api/donor", require("./Routes/donor/index.js"));
 const PORT = process.env.PORT || 5000;
 
 // Initialize server
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', async() => {
     // console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    connectDB();
+     console.log(`Server running on port ${PORT}`);
+
+    try {
+        await connectDB();
+        console.log("Database connected");
+    } catch (err) {
+        console.error("Database connection failed:", err);
+        process.exit(1);
+    }
 });
 
 // Graceful shutdown handling
