@@ -1,11 +1,23 @@
 require("dotenv").config();
+
+console.log("STARTING APP");
+
+console.log("Loading cors config...");
+const corsOptions = require("./config/corsConfig.js");
+console.log("cors config loaded");
+
+console.log("Loading database...");
+const { connectDB, gracefulShutdown } = require("./config/connectDb.js");
+console.log("database module loaded");
+
+console.log("Loading auth routes...");
+const auth = require("./Routes/auth/auth.js");
+console.log("auth routes loaded");
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const path = require('path');
-const corsOptions = require("./config/corsConfig.js");
-const { connectDB, gracefulShutdown } = require("./config/connectDb.js");
-const auth = require("./Routes/auth/auth.js")
+const path = require("path");
     // const { globalErrorHandler } = require('./utils/errorHandler');
 process.on("uncaughtException", (err) => {
     console.error("UNCAUGHT EXCEPTION:");
@@ -26,7 +38,7 @@ console.log({
 const app = express();
 
 // CORS configuration
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
@@ -75,15 +87,16 @@ const PORT = process.env.PORT || 5000;
 // Initialize server
 const server = app.listen(PORT, '0.0.0.0', async() => {
     // console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-     console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 
-    try {
-        await connectDB();
-        console.log("Database connected");
-    } catch (err) {
-        console.error("Database connection failed:", err);
-        process.exit(1);
-    }
+  try {
+    await connectDB();
+    console.log("Database connected");
+  } catch (error) {
+    console.error("Database connection failed:");
+    console.error(error);
+    process.exit(1);
+  }
 });
 
 // Graceful shutdown handling
