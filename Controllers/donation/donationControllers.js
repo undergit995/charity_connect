@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const DonationService = require('../../services/DonationService');
-const User = require('../../models/User');
-const Campaign = require('../../models/CampaignModel');
-const Donation = require('../../models/Donation');
-const { sendEmail } = require('../../utils/emailService');
+const DonationService = require('../../services/donationService.js');
+const User = require('../../models/User.js');
+const Campaign = require('../../models/CampaignModel.js');
+const Donation = require('../../models/Donation.js');
+const { sendEmail } = require('../../utils/emailService.js');
 
 /**
  * @desc Process a donation with transaction support

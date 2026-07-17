@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Donation = require('../../models/Donation');
-const Campaign = require('../../models/CampaignModel');
+const User = require('../../models/User.js');
+const Donation = require('../../models/Donation.js');
+const Campaign = require('../../models/CampaignModel.js');
 
 /**
  * @route GET /api/charity/donations
