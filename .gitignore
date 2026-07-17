@@ -1,7 +1,7 @@
 node_modules/
 Backend/uploads/
 Backend/logs/
-.env/
+*.env
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
