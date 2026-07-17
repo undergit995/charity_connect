@@ -12,6 +12,10 @@ exports.sendEmailOtp = async (req, res) => {
     const otpData = await otpService.createOTP(email, 'email', purpose);
     
     // Respond to the client immediately
+    sendOTPEmail(email, otpData.otp, purpose, otpService.otpConfig.expiresIn / 60).catch(emailError => {
+      // Log the error if email sending fails, but don't crash the server.
+      console.log(`[Non-blocking] Failed to send OTP email to ${email}:`, emailError.message);
+    });
     res.status(200).json({
       success: true,
       message: `OTP sent successfully to ${email}`,
@@ -19,10 +23,6 @@ exports.sendEmailOtp = async (req, res) => {
       otpId: otpData._id, // Include otpId for reference if needed
     });
 // Send the email in the background (fire and forget)
-    sendOTPEmail(email, otpData.otp, purpose, otpService.otpConfig.expiresIn / 60).catch(emailError => {
-      // Log the error if email sending fails, but don't crash the server.
-      console.log(`[Non-blocking] Failed to send OTP email to ${email}:`, emailError.message);
-    });
   } catch (error) {
     console.log('Send OTP email error:', error.message);
     const statusCode = error.message.includes('Please wait') ? 429 : 500;
