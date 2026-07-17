@@ -60,8 +60,9 @@ class OTPService {
       await newOtp.save();
       return newOtp.toObject();
     } catch (error) {
-      logger.error('Error creating OTP:', error.message);
-      throw new Error('Failed to create OTP');
+      console.log(error.message);
+      logger.error('Error creating OTP:', error);
+      throw error; // Re-throw the original error
     }
   }
 
@@ -137,6 +138,8 @@ class OTPService {
         expiresIn: this.otpConfig.expiresIn,
       };
     } catch (error) {
+      console.log(error.message);
+      
       logger.error('Error sending OTP email:', error);
       throw new Error('Failed to send OTP email');
     }

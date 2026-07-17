@@ -1,19 +1,7 @@
 require("dotenv").config();
-
-console.log("STARTING APP");
-
-console.log("Loading cors config...");
 const corsOptions = require("./config/corsConfig.js");
-console.log("cors config loaded");
-
-console.log("Loading database...");
 const { connectDB, gracefulShutdown } = require("./config/connectDb.js");
-console.log("database module loaded");
-
-console.log("Loading auth routes...");
 const auth = require("./Routes/auth/auth.js");
-console.log("auth routes loaded");
-
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -30,11 +18,6 @@ process.on("unhandledRejection", (err) => {
     console.error(err);
     process.exit(1);
 });
-console.log({
-  PORT: process.env.PORT,
-  MONGO_URI: !!process.env.MONGO_URI,
-  JWT_SECRET: !!process.env.JWT_SECRET
-});
 const app = express();
 
 // CORS configuration
@@ -47,7 +30,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    // console.log(`Request from ${req.headers.origin} → ${req.method} ${req.originalUrl}`);
+    console.log(`Request from ${req.headers.origin} → ${req.method} ${req.originalUrl}`);
     next();
 });
 
@@ -58,42 +41,17 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // API routes
 app.use("/api/auth", auth);
-console.log("Loading routes...");
-
-console.log("maintenance");
 app.use("/api/maintenance", require("./Routes/Maintenance/index.js"));
-
-console.log("otp");
 app.use("/api/otp", require("./Routes/auth/otpRoute.js"));
-
-console.log("admin");
 app.use("/api/admin", require("./Routes/admin/admin.js"));
-
-console.log("charity");
 app.use("/api/charity", require("./Routes/charity/index.js"));
-
-console.log("donations");
 app.use("/api/donations", require("./Routes/donation/donation.js"));
-
-console.log("campaigns");
 app.use("/api/campaigns", require("./Routes/campaign/campaign.js"));
-
-console.log("payments");
 app.use("/api/payments", require("./Routes/payment/index.js"));
-
-console.log("verification");
 app.use("/api/verification", require("./Routes/verification/verification.js"));
-
-console.log("contact");
 app.use("/api/contact", require("./Routes/contact/index.js"));
-
-console.log("settings");
 app.use("/api/info", require("./Routes/admin/settings.js"));
-
-console.log("donor");
 app.use("/api/donor", require("./Routes/donor/index.js"));
-
-console.log("All routes loaded");
 // Global error handler
 // app.use(globalErrorHandler);
 
@@ -105,16 +63,14 @@ console.log("All routes loaded");
 //     });
 // });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 7000;
 
 // Initialize server
 const server = app.listen(PORT, '0.0.0.0', async() => {
-    // console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    console.log(`Server running on port ${PORT}`);
 
   try {
     await connectDB();
-    console.log("Database connected");
+    console.log("Database connection ");
   } catch (error) {
     console.error("Database connection failed:");
     console.error(error);

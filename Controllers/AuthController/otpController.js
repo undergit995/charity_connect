@@ -3,23 +3,31 @@ const { validateEmail } = require('../../utils/validators.js');
 const { sendOTPEmail } = require('../../utils/emailService.js');
 
 exports.sendEmailOtp = async (req, res) => {
-  try {
+  try {console.log("grs");
+  
     const { email, purpose = 'verification' } = req.body;
     if (!email || !validateEmail(email)) {
       return res.status(400).json({ success: false, message: 'Valid email is required' });
     }
     const otpData = await otpService.createOTP(email, 'email', purpose);
-    const result = await sendOTPEmail(email, otpData.otp, purpose, otpService.otpConfig.expiresIn / 60);
-
+    
+    // Respond to the client immediately
     res.status(200).json({
       success: true,
       message: `OTP sent successfully to ${email}`,
       expiresIn: otpService.otpConfig.expiresIn,
       otpId: otpData._id, // Include otpId for reference if needed
     });
+// Send the email in the background (fire and forget)
+    sendOTPEmail(email, otpData.otp, purpose, otpService.otpConfig.expiresIn / 60).catch(emailError => {
+      // Log the error if email sending fails, but don't crash the server.
+      console.log(`[Non-blocking] Failed to send OTP email to ${email}:`, emailError.message);
+    });
   } catch (error) {
-    // //console.log('Send OTP email error:', error.message);
-    res.status(500).json({ success: false, message: error.message || 'Failed to send OTP' });
+    console.log('Send OTP email error:', error.message);
+    const statusCode = error.message.includes('Please wait') ? 429 : 500;
+    const message = error.message || 'Failed to send OTP';
+    res.status(statusCode).json({ success: false, message });
   }
 };
 

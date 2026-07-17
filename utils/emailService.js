@@ -665,6 +665,7 @@ const sendOTPEmail = async (to, otp, purpose = 'verification', expiresIn = 5) =>
   try{
     return await sendTemplateEmail(to, 'otpVerification', { otp, purpose, expiresIn });
   }catch(error){
+    console.log(error.message)
     logger.error('OTP email send error:', error.message);
     throw error;
   }

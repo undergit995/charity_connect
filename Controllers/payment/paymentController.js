@@ -144,12 +144,9 @@ exports.verifyPayment = async (req, res) => {
     const orderDetails = await razorpay.orders.fetch(orderId);
     const originalUserId = orderDetails.notes?.userId;
 
-    // Associate the donation with the user who created the order.
-    // This is more reliable than using req.userId from the verification request.
     if (originalUserId && !donation.donorId) {
       donation.donorId = originalUserId;
     } else if (req.userId && !donation.donorId) {
-      // Fallback for older orders or if notes are missing
       donation.donorId = req.userId;
     }
 
@@ -200,59 +197,65 @@ exports.verifyPayment = async (req, res) => {
     }
 
     if (donorEmail) {
-      await sendEmail({
-        to: donorEmail,
-        subject: `Donation Receipt - ${donation.receiptNumber}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; }
-              .content { padding: 30px; }
-              .receipt-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-              .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Thank You! 🙏</h1>
-              </div>
-              <div class="content">
-                <h2>Dear ${donorName},</h2>
-                <p>Thank you for your generous donation to <strong>${campaign.title}</strong>.</p>
-                <div class="receipt-box">
-                  <div class="row">
-                    <span><strong>Receipt Number</strong></span>
-                    <span>${donation.receiptNumber}</span>
-                  </div>
-                  <div class="row">
-                    <span><strong>Amount</strong></span>
-                    <span>₹${donation.amount}</span>
-                  </div>
-                  <div class="row">
-                    <span><strong>Transaction ID</strong></span>
-                    <span>${donation.transactionId}</span>
-                  </div>
-                  <div class="row">
-                    <span><strong>Date</strong></span>
-                    <span>${new Date(donation.completedAt).toLocaleString()}</span>
-                  </div>
+      try {
+        await sendEmail({
+          to: donorEmail,
+          subject: `Donation Receipt - ${donation.receiptNumber}`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; }
+                .content { padding: 30px; }
+                .receipt-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>Thank You! 🙏</h1>
                 </div>
-                <p style="text-align: center;">
-                  <a href="${process.env.FRONTEND_URL}/donor/donations/${donation._id}/receipt" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px;">
-                    Download Full Receipt
-                  </a>
-                </p>
+                <div class="content">
+                  <h2>Dear ${donorName},</h2>
+                  <p>Thank you for your generous donation to <strong>${campaign.title}</strong>.</p>
+                  <div class="receipt-box">
+                    <div class="row">
+                      <span><strong>Receipt Number</strong></span>
+                      <span>${donation.receiptNumber}</span>
+                    </div>
+                    <div class="row">
+                      <span><strong>Amount</strong></span>
+                      <span>₹${donation.amount}</span>
+                    </div>
+                    <div class="row">
+                      <span><strong>Transaction ID</strong></span>
+                      <span>${donation.transactionId}</span>
+                    </div>
+                    <div class="row">
+                      <span><strong>Date</strong></span>
+                      <span>${new Date(donation.completedAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <p style="text-align: center;">
+                    <a href="${process.env.FRONTEND_URL}/donor/donations/${donation._id}/receipt" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px;">
+                      Download Full Receipt
+                    </a>
+                  </p>
+                </div>
               </div>
-            </div>
-          </body>
-          </html>
-        `,
-      });
+            </body>
+            </html>
+          `,
+        });
+      } catch (emailError) {
+        console.error("Failed to send donation receipt email:", emailError);
+        // Do not block the response to the user if email fails.
+        // Log this for monitoring.
+      }
     }
 
     res.status(200).json({
