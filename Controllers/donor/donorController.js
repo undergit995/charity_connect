@@ -437,6 +437,7 @@ exports.updateProfile = async (req, res) => {
       bio,
       donorPreferences,
       notificationPreferences,
+      email,
       emailChangeToken,
     } = req.body;
     if (firstName) donor.firstName = firstName;
@@ -497,7 +498,7 @@ exports.updateProfile = async (req, res) => {
         data: { user: updatedDonor },
       });
   } catch (error) {
-    //console.error("Update donor profile error:", error);
+    console.log("Update donor profile error:", error.message);
     res
       .status(500)
       .json({

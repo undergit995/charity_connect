@@ -141,8 +141,8 @@ SettingsSchema.statics.getDefaultData = function(type) {
 
     contact: {
       email: 'support@charityconnect.com',
-      phone: '+1 (234) 567-890',
-      address: '123 Charity Street, Giving City, GC 12345',
+      phone: '+91 9234-567-890',
+      address: '123 JNTU, GC 12345',
       workingHours: 'Mon-Fri: 9:00 AM - 6:00 PM',
       mapEmbedUrl: 'https://www.google.com/maps/embed?pb=...',
       contactFormEnabled: true,

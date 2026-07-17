@@ -412,6 +412,20 @@ router.put("/campaigns/:id/approve", authAndRole("admin"), campaignController.ap
  * @access Private (Admin only)
  */
 router.put("/campaigns/:id/reject", authAndRole("admin"), campaignController.rejectCampaign);
+
+/**
+ * @route PUT /api/admin/campaigns/:id/pause
+ * @desc Pause campaign (Admin only)
+ * @access Private (Admin only)
+ */
+router.put("/campaigns/:id/pause", authAndRole("admin"), campaignController.pauseCampaign);
+
+/**
+ * @route PUT /api/admin/campaigns/:id/resume
+ * @desc Resume campaign (Admin only)
+ * @access Private (Admin only)
+ */
+router.put("/campaigns/:id/resume", authAndRole("admin"), campaignController.resumeCampaign);
 // routes/adminRoutes.js
 
 /**

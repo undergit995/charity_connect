@@ -356,29 +356,10 @@ exports.login =  async (req, res) => {
                     reason: isEligible ? 'All documents verified' : `${pendingDocs.length} document(s) pending verification`,
                 };
             } else {
-                // No verification record found - create one
-                verification = await createVerificationRecord(user._id);
-                verificationStatus = {
-                    status: 'pending',
-                    isApproved: false,
-                    isVerified: false,
-                    documents: {
-                        total: 0,
-                        verified: 0,
-                        rejected: 0,
-                        submitted: 0,
-                        pending: 0,
-                    },
-                    progress: 0,
-                    isEligible: false,
-                    missingDocs: [],
-                    lastUpdated: null,
-                    submittedAt: null,
-                    reviewedAt: null,
-                };
+                verificationStatus = { status: 'pending', isApproved: false, isVerified: false, progress: 0, isEligible: false, missingDocs: [] };
                 eligibility = {
                     canCreateCampaigns: false,
-                    reason: 'Verification not started. Please complete document verification.',
+                    reason: 'Verification record not found. Please try again.',
                 };
             }
         }
@@ -507,7 +488,11 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/auth/reset-password?token=${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      console.error("FATAL: FRONTEND_URL environment variable is not set.");
+    }
+    const resetUrl = `token=${resetToken}`;
 
     await sendPasswordResetEmail(email, user.fullName, resetUrl).catch(
       (error) => {

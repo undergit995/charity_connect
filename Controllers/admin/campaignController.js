@@ -347,3 +347,99 @@ exports.rejectCampaign = async (req, res) => {
         });
     }
 };
+
+/**
+ * @desc Pause an active campaign (Admin only)
+ * @route PUT /api/admin/campaigns/:id/pause
+ * @access Private (Admin only)
+ */
+exports.pauseCampaign = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid campaign ID" });
+        }
+
+        const campaign = await Campaign.findById(id).populate('charityId');
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: "Campaign not found" });
+        }
+
+        if (campaign.status !== 'active') {
+            return res.status(400).json({ success: false, message: "Only active campaigns can be paused" });
+        }
+
+        campaign.status = 'paused';
+        campaign.isActive = false;
+        await campaign.save();
+
+        await ActivityLog.create({
+            userId: req.userId,
+            action: `Paused campaign: ${campaign.title}`,
+            type: "campaign_pause",
+            details: { campaignId: campaign._id, adminAction: true }
+        });
+
+        if (campaign.charityId && campaign.charityId.email) {
+            await sendEmail({
+                to: campaign.charityId.email,
+                subject: `Your Campaign "${campaign.title}" Has Been Paused`,
+                html: `<p>Your campaign "<strong>${campaign.title}</strong>" has been temporarily paused by an administrator. Please contact support for more information.</p>`
+            });
+        }
+
+        res.status(200).json({ success: true, message: "Campaign paused successfully", data: campaign });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Failed to pause campaign", error: error.message });
+    }
+};
+
+/**
+ * @desc Resume a paused campaign (Admin only)
+ * @route PUT /api/admin/campaigns/:id/resume
+ * @access Private (Admin only)
+ */
+exports.resumeCampaign = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid campaign ID" });
+        }
+
+        const campaign = await Campaign.findById(id).populate('charityId');
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: "Campaign not found" });
+        }
+
+        if (campaign.status !== 'paused') {
+            return res.status(400).json({ success: false, message: "Only paused campaigns can be resumed" });
+        }
+
+        campaign.status = 'active';
+        campaign.isActive = true;
+        await campaign.save();
+
+        await ActivityLog.create({
+            userId: req.userId,
+            action: `Resumed campaign: ${campaign.title}`,
+            type: "campaign_resume",
+            details: { campaignId: campaign._id, adminAction: true }
+        });
+
+        if (campaign.charityId && campaign.charityId.email) {
+            await sendEmail({
+                to: campaign.charityId.email,
+                subject: `Your Campaign "${campaign.title}" Has Been Resumed`,
+                html: `<p>Your campaign "<strong>${campaign.title}</strong>" has been resumed by an administrator and is now active again.</p>`
+            });
+        }
+
+        res.status(200).json({ success: true, message: "Campaign resumed successfully", data: campaign });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Failed to resume campaign", error: error.message });
+    }
+};

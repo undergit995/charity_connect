@@ -67,8 +67,7 @@ const donationSchema = new mongoose.Schema(
     },
     transactionId: { 
       type: String, 
-      unique: true,
-      sparse:true,
+      default: null,
       trim: true
     },
     paymentGateway: {
@@ -342,6 +341,7 @@ donationSchema.index({ donorId: 1, status: 1 });
 donationSchema.index({ charityId: 1, status: 1 });
 donationSchema.index({ donationDate: -1 });
 donationSchema.index({ receiptNumber: 1 }, { unique: true, sparse: true });
+donationSchema.index({ transactionId: 1 }, { unique: true, partialFilterExpression: { transactionId: { $type: 'string' } } });
 donationSchema.index({ status: 1, createdAt: -1 });
 donationSchema.index({ exceededGoal: 1, campaignId: 1 });
 

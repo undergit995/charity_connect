@@ -8,3 +8,32 @@ Stack: Error: getaddrinfo ENOTFOUND smtp.gmail.com
 Error: getaddrinfo ENOTFOUND smtp.gmail.com
 Stack: Error: getaddrinfo ENOTFOUND smtp.gmail.com
     at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+[2026-07-17T08:18:02.591Z] [ERROR] Email send error executing sendMail:
+Error: read ECONNRESET
+Stack: Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)
+[2026-07-17T08:18:02.779Z] [ERROR] Template email send error:
+Meta: read ECONNRESET
+[2026-07-17T08:18:02.876Z] [ERROR] OTP email send error:
+Meta: read ECONNRESET
+[2026-07-17T08:31:13.672Z] [ERROR] Email send error executing sendMail:
+Error: read ECONNRESET
+Stack: Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)
+[2026-07-17T08:31:13.672Z] [ERROR] Template email send error:
+Meta: read ECONNRESET
+[2026-07-17T08:31:13.673Z] [ERROR] OTP email send error:
+Meta: read ECONNRESET
+[2026-07-17T08:56:13.698Z] [ERROR] Auth middleware error:
+Error: getaddrinfo ENOTFOUND ac-5dwxcnl-shard-00-00.ywnco6c.mongodb.net
+Stack: MongoServerSelectionError: getaddrinfo ENOTFOUND ac-5dwxcnl-shard-00-00.ywnco6c.mongodb.net
+    at Topology.selectServer (D:\CharityConnect\Backend\node_modules\mongodb\lib\sdam\topology.js:348:38)
+    at runNextTicks (node:internal/process/task_queues:64:5)
+    at process.processTimers (node:internal/timers:538:9)
+    at async executeOperationWithRetries (D:\CharityConnect\Backend\node_modules\mongodb\lib\operations\execute_operation.js:157:18)
+    at async executeOperation (D:\CharityConnect\Backend\node_modules\mongodb\lib\operations\execute_operation.js:83:16)
+    at async FindCursor._initialize (D:\CharityConnect\Backend\node_modules\mongodb\lib\cursor\find_cursor.js:62:26)
+    at async FindCursor.cursorInit (D:\CharityConnect\Backend\node_modules\mongodb\lib\cursor\abstract_cursor.js:620:27)
+    at async FindCursor.fetchBatch (D:\CharityConnect\Backend\node_modules\mongodb\lib\cursor\abstract_cursor.js:654:13)
+    at async FindCursor.next (D:\CharityConnect\Backend\node_modules\mongodb\lib\cursor\abstract_cursor.js:326:17)
+    at async Collection.findOne (D:\CharityConnect\Backend\node_modules\mongodb\lib\collection.js:313:24)
