@@ -124,8 +124,8 @@ SettingsSchema.statics.getDefaultData = function(type) {
       ],
       contactInfo: {
         email: 'support@charityconnect.com',
-        phone: '+1 (234) 567-890',
-        address: '123 Charity Street, Giving City, GC 12345',
+        phone: '+91 7345677890',
+        address: 'Metro JNTU Street,Hyderabad,Telangana',
         workingHours: 'Mon-Fri: 9:00 AM - 6:00 PM',
       },
       socialLinks: [

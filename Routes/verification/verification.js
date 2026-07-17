@@ -13,8 +13,7 @@ const { checkEligibility, DOCUMENT_REQUIREMENTS } = require('../../services/veri
  */
 router.get('/status/:charityId', async (req, res) => {
   try {
-    const { charityId } = req.params;
-    
+    const { charityId } = req.params;    
     const verification = await Verification.findOne({ charityId });
     if (!verification) {
       // Initialize verification record

@@ -19,14 +19,14 @@ const donationLimiter = rateLimit({
  * @desc Process a donation with transaction support
  * @access Private
  */
-router.post('/', authMiddleware, donationLimiter, donationController.processDonation);
+router.post('/', donationLimiter, donationController.processDonation);
 
 /**
  * @route POST /api/donations/queue
  * @desc Queue donation for processing (non-blocking)
  * @access Private
  */
-router.post('/queue', authMiddleware, donationLimiter, donationController.queueDonation);
+router.post('/queue',  donationLimiter, donationController.queueDonation);
 
 /**
  * @route POST /api/donations/bulk
@@ -68,6 +68,6 @@ router.get('/campaigns/:id/donate', donationController.getCampaignForDonation);
  * @desc Get donation receipt
  * @access Private
  */
-router.get('/receipt/:id', authMiddleware, donationController.getDonationReceipt);
+router.get('/receipt/:id', donationController.getDonationReceipt);
 
 module.exports = router;
